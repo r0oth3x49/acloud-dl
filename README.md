@@ -1,3 +1,8 @@
+[![GitHub release](https://img.shields.io/badge/release-v0.1-brightgreen.svg?style=flat-square)](https://github.com/r0oth3x49/acloud-dl/releases/tag/v0.1)
+[![GitHub stars](https://img.shields.io/github/stars/r0oth3x49/acloud-dl.svg?style=flat-square)](https://github.com/r0oth3x49/acloud-dl/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/r0oth3x49/acloud-dl.svg?style=flat-square)](https://github.com/r0oth3x49/acloud-dl/network)
+[![GitHub issues](https://img.shields.io/github/issues/r0oth3x49/acloud-dl.svg?style=flat-square)](https://github.com/r0oth3x49/acloud-dl/issues)
+[![GitHub license](https://img.shields.io/github/license/r0oth3x49/acloud-dl.svg?style=flat-square)](https://github.com/r0oth3x49/acloud-dl/blob/master/LICENSE)
 
 # acloud-dl
 **A cross-platform python based utility to download courses from acloud.guru for personal offline use.**
