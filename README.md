@@ -51,6 +51,15 @@ You can download the latest version of acloud-dl by cloning the GitHub repositor
 
 ## ***Usage***
 
+***Steps before running acloud-dl.py which will list down courses you started***
+ - Login to your acloud.guru account via browser.
+ - Click on **Browse Courses**.
+ - Move mouse to the course you want to download.
+ - On mouseover you will see a button "GET" click on that.
+ - It Will redirect to the course there is another button "START THIS COURSE" click on that.
+ - Done, Now you can use the below usage.
+
+
 ***Download a course***
 
     python acloud-dl.py -c file_containing_cookie.txt
