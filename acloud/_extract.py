@@ -71,7 +71,7 @@ class CloudGuru(ProgressBar):
 
     def _extract_cookie_string(self, raw_cookies):
         try:
-            access_token = re.search(r'(Authorization:\s*Bearer\s*(?P<access_token>(.+))?)', raw_cookies, flags=re.I).group('access_token')
+            access_token = re.search(r'(?i)(Authorization:\s*Bearer\s*(?P<access_token>.+?))\s', raw_cookies).group('access_token')
         except:
             sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "Cookies error, Request Headers is required.\n")
             sys.stdout.write(fc + sd + "[" + fm + sb + "i" + fc + sd + "] : " + fg + sb + "Copy Request Headers for single request to a file, while you are logged in.\n")
@@ -112,6 +112,63 @@ class CloudGuru(ProgressBar):
                     sys.stdout.write(fc + sd + "[" + fm + sb + "i" + fc + sd + "] : " + fg + sb + "Login again & copy Request headers for a single request to file..\n")
                     sys.exit(0)
 
+    def _extract_assets(self, assets):
+        _temp = []
+        if assets and isinstance(assets, list):
+            for entry in assets:
+                filename = self._sanitize(entry.get('title'))
+                url = entry.get('url')
+                bucket = entry.get('bucket')
+                key = entry.get('key')
+                regex = "^.*\.(?P<extension>jpg|JPG|gif|GIF|doc|DOC|pdf|PDF|zip|ZIP|DOCX|docx|PPT|ppt|PPTX|pptx|pptm|PPTM|txt|TXT|py|PY|C|c|JSON|json|md|MD|HTML|html|htm|HTM|sh|SH|BATCH|batch|bat|bat)$"
+                if url:
+                    match = re.match(regex, url)
+                    if match:
+                        extension = match.group('extension')
+                        _temp.append({
+                                'url' : url,
+                                'type' : 'file',
+                                'filename' : filename.rsplit('.', 1)[0] if '.' in filename else filename,
+                                'extension' : extension,
+                            })
+                    if not match:
+                        _temp.append({
+                                'url' : url,
+                                'type' : 'external_link',
+                                'filename' : filename.rsplit('.', 1)[0] if '.' in filename else filename,
+                                'extension' : 'txt',
+                            })
+                if not url:
+                    query = '''{"bucket": "%s","filePath": "%s"}''' % (bucket, key)
+                    query = GRAPH_QUERY_DOWNLOAD_LINKS % (query)
+                    try:
+                        data = self._session._post(PROTECTED_GRAPHQL_URL, query)
+                    except conn_error as e:
+                        pass
+                    else:
+                        response = data.json().get('data')
+                        if response:
+                            url = response['getRestrictedFiles'].get('urls')[0]
+                            regex = "^.*\.(?P<extension>jpg|JPG|gif|GIF|doc|DOC|pdf|PDF|zip|ZIP|DOCX|docx|PPT|ppt|PPTX|pptx|pptm|PPTM|txt|TXT|py|PY|C|c|JSON|json|md|MD|HTML|html|htm|HTM|sh|SH|BATCH|batch|bat|bat).*"
+                            match = re.match(regex, url)
+                            if match:
+                                extension = match.group('extension')
+                            if not match:
+                                extension = filename.rsplit('.', 1)[-1] if '.' in url else 'zip'
+                            _temp.append({
+                                    'url' : url,
+                                    'type' : 'file',
+                                    'filename' : filename.rsplit('.', 1)[0] if '.' in filename else filename,
+                                    'extension' : extension,
+                                })
+                        if not response:
+                            if data.headers.get('x-amzn-ErrorType'):
+                                sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "Authorization error : it seems your authorization token is expired.\n")
+                                sys.stdout.write(fc + sd + "[" + fm + sb + "i" + fc + sd + "] : " + fg + sb + "Login again & copy Request headers for a single request to file..\n")
+                                sys.exit(0)
+
+        return _temp
+
     def _extract_sources(self, sources):
         _temp = []
         for entry in sources:
@@ -142,6 +199,22 @@ class CloudGuru(ProgressBar):
                         'url' : query,
                         'height' : height,
                         'width' : width,
+                        'size' : filesize
+                    })
+            if not resolution:
+                source_type = entry.get('type').replace('video/', '')
+                url = entry.get('key')
+                bucket = entry.get('bucket')
+                filesize = entry.get('filesize') or 0
+                query = '''{"bucket": "%s","filePath": "%s"}''' % (bucket, url)
+                _temp.append({
+                        'quality' : resolution,
+                        'type' : 'video',
+                        'extension' : source_type,
+                        'path' : url,
+                        'url' : query,
+                        'height' : 720,
+                        'width' : 1280,
                         'size' : filesize
                     })
         return _temp
@@ -190,13 +263,13 @@ class CloudGuru(ProgressBar):
     def _extract_lectures(self, lectures):
         _temp = []
         for entry in lectures:
-            # text = '\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading course information .. "
-            # self._spinner(text)
             lecture_title = self._sanitize(entry.get('title'))
             lecture_index = int(entry.get('sequence')) + 1
             lecture_id = entry.get('componentIdentifier')
             content_type = entry['content'].get('type')
             lecture = "{0:03d} {1!s}".format(lecture_index, lecture_title)
+            assets = entry.get('notes')
+            assets = self._extract_assets(assets)
             if content_type == 'video':
                 sources = entry['content'].get('videosources')
                 duration = entry['content'].get('duration')
@@ -210,7 +283,9 @@ class CloudGuru(ProgressBar):
                             'duration' : duration,
                             'extension' : extension,
                             'sources' : sources,
+                            'assets' : assets,
                             'sources_count' : len(sources),
+                            'assets_count' : len(assets)
                         })
         return _temp
 
@@ -265,4 +340,8 @@ class CloudGuru(ProgressBar):
                     sys.stdout.write(fc + sd + "[" + fm + sb + "i" + fc + sd + "] : " + fg + sb + "Login again & copy Request headers for a single request to file..\n")
                     sys.exit(0)
 
+        # with open("course.json", "w") as f:
+        #     json.dump(acloud, f, indent=4)
+        # f.close()
+        # exit(0)
         return acloud

@@ -48,9 +48,10 @@ class CloudGuru(ProgressBar):
 				lecture_title = lecture.title
 				lecture_best = lecture.getbest()
 				lecture_streams = lecture.streams
+				lecture_assets = lecture.assets
 				if lecture_streams:
 					sys.stdout.write(fc + sd + "     - " + fy + sb + "duration   : " + fm + sb + str(lecture.duration)+ fy + sb + ".\n")
-					sys.stdout.write(fc + sd + "     - " + fy + sb + "Lecture    : " + fm + sb + str(lecture_title)+ fy + sb + ".\n")
+					sys.stdout.write(fc + sd + "     - " + fy + sb + "Lecture id : " + fm + sb + str(lecture_id)+ fy + sb + ".\n")
 					for stream in lecture_streams:
 						content_length = stream.get_filesize()
 						if content_length != 0:
@@ -66,6 +67,45 @@ class CloudGuru(ProgressBar):
 								in_MB = in_MB + fc + sb + "(Best)" + fg + sd
 							sys.stdout.write('\t- ' + fg + sd + "{:<23} {:<8}{}{}{}{}\n".format(str(stream), str(stream.dimention[1]) + 'p', sz, in_MB, fy, sb))
 							time.sleep(0.5)
+				if lecture_assets:
+					for asset in lecture_assets:
+						if asset.mediatype != 'external_link':
+							content_length = asset.get_filesize()
+							if content_length != 0:
+								if content_length <= 1048576.00:
+									size = round(float(content_length) / 1024.00, 2)
+									sz = format(size if size < 1024.00 else size/1024.00, '.2f')
+									in_MB = 'KB' if size < 1024.00 else 'MB'
+								else:
+									size = round(float(content_length) / 1048576, 2)
+									sz = format(size if size < 1024.00 else size/1024.00, '.2f')
+									in_MB = "MB " if size < 1024.00 else 'GB '
+								sys.stdout.write('\t- ' + fg + sd + "{:<23} {:<8}{}{}{}{}\n".format(str(asset), asset.extension, sz, in_MB, fy, sb))
+
+	def download_assets(self, lecture_assets='', filepath=''):
+		if lecture_assets:
+			for assets in lecture_assets:
+				title = assets.filename
+				mediatype = assets.mediatype
+				if mediatype == "external_link":
+					assets.download(filepath=filepath, quiet=True, callback=self.show_progress)
+				else:
+					sys.stdout.write(fc + sd + "\n[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Downloading asset(s)\n")
+					sys.stdout.write(fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Downloading (%s)\n" % (title))
+					try:
+						retval = assets.download(filepath=filepath, quiet=True, callback=self.show_progress)
+					except KeyboardInterrupt:
+						sys.stdout.write (fc + sd + "\n[" + fr + sb + "-" + fc + sd + "] : " + fr + sd + "User Interrupted..\n")
+						sys.exit(0)
+					else:
+						msg     = retval.get('msg')
+						if msg == 'already downloaded':
+							sys.stdout.write (fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Asset : '%s' " % (title) + fy + sb + "(already downloaded).\n")
+						elif msg == 'download':
+							sys.stdout.write (fc + sd + "[" + fm + sb + "+" + fc + sd + "] : " + fg + sd + "Downloaded  (%s)\n" % (title))
+						else:
+							sys.stdout.write (fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Asset : '%s' " % (title) + fc + sb + "(download skipped).\n")
+							sys.stdout.write (fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sd + "{}\n".format(msg))
 
 	def download_lectures(self, lecture_best='', lecture_title='', inner_index='', lectures_count='', filepath=''):
 		if lecture_best:
@@ -85,9 +125,11 @@ class CloudGuru(ProgressBar):
 				sys.stdout.write (fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Lecture : '%s' " % (lecture_title) + fc + sb + "(download skipped).\n")
 				sys.stdout.write (fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sd + "{}\n".format(msg))
 
-	def download_lectures_only(self, lecture_best='', lecture_title='', inner_index='', lectures_count='', filepath=''):
+	def download_lectures_only(self, lecture_best='', lecture_title='', inner_index='', lectures_count='', lecture_assets='', filepath=''):
 		if lecture_best:
 			self.download_lectures(lecture_best=lecture_best, lecture_title=lecture_title, inner_index=inner_index, lectures_count=lectures_count, filepath=filepath)
+		if lecture_assets:
+			self.download_assets(lecture_assets=lecture_assets, filepath=filepath)
 
 	def course_download(self, path='', quality=''):
 		course = acloud.courses(cookies=self.cookies)
@@ -123,8 +165,9 @@ class CloudGuru(ProgressBar):
 				lecture_title = lecture.title
 				lecture_best = lecture.getbest()
 				lecture_streams = lecture.streams
+				lecture_assets = lecture.assets
 				lecture_best = lecture.get_quality(best_quality=lecture_best, streams=lecture_streams, requested=quality)
-				self.download_lectures_only(lecture_best=lecture_best, lecture_title=lecture_title, inner_index=lecture_index, lectures_count=lectures_count, filepath=filepath)
+				self.download_lectures_only(lecture_best=lecture_best, lecture_title=lecture_title, inner_index=lecture_index, lectures_count=lectures_count, lecture_assets=lecture_assets, filepath=filepath)
 
 
 def main():

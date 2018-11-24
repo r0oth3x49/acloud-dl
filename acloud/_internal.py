@@ -33,6 +33,7 @@ from ._shared import (
         CloudGuruChapters, 
         CloudGuruLectures, 
         CloudGuruLectureStreams,
+        CloudGuruLectureLectureAssets
     )
 from ._getpass import GetPass
 
@@ -97,6 +98,7 @@ class InternCloudGuruLecture(CloudGuruLectures):
         self._lecture_title     = self._info['lecture_title']
         self._lecture_index     = self._info['lecture_index']
         self._sources_count     = self._info['sources_count']
+        self._assets_count      = self._info['assets_count']
         
         self._extension         = self._info.get('extension') or None
         self._duration          = self._info.get('duration') or None
@@ -112,6 +114,10 @@ class InternCloudGuruLecture(CloudGuruLectures):
     def _process_streams(self):
         streams = [InternCloudGuruLectureStream(z, self) for z in self._info['sources']] if self._sources_count > 0 else []
         self._streams = streams
+
+    def _process_assets(self):
+        assets  =   [InternCloudGuruLectureAssets(z, self) for z in self._info['assets']] if self._assets_count > 0 else []
+        self._assets = assets
 
 
 class InternCloudGuruLectureStream(CloudGuruLectureStreams):
@@ -129,3 +135,14 @@ class InternCloudGuruLectureStream(CloudGuruLectureStreams):
         self._url = sources.get('url')
         self._path = sources.get('path')
         self._fsize = sources.get('size')
+
+
+class InternCloudGuruLectureAssets(CloudGuruLectureLectureAssets):
+
+    def __init__(self, assets, parent):
+        super(InternCloudGuruLectureAssets, self).__init__(parent)
+
+        self._mediatype = assets.get('type')
+        self._extension = assets.get('extension')
+        self._title = '{0:03d} {1!s}'.format(parent._lecture_index, assets.get('filename'))
+        self._url = assets.get('url')

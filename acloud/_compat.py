@@ -43,6 +43,7 @@ if sys.version_info[:2] >= (3, 0):
     from html.parser import HTMLParser as compat_HTMLParser
     from http.cookies import SimpleCookie as ParseCookie
     from requests.exceptions import ConnectionError as conn_error
+    from requests.exceptions import HTTPError as http_error
 
     encoding, pyver = str, 3
     ssl._create_default_https_context = ssl._create_unverified_context
@@ -60,6 +61,7 @@ else:
     from Cookie import SimpleCookie as ParseCookie
     from HTMLParser import HTMLParser as compat_HTMLParser
     from requests.exceptions import ConnectionError as conn_error
+    from requests.exceptions import HTTPError as http_error
 
     encoding, pyver = unicode, 2
 
@@ -90,6 +92,7 @@ __ALL__ = [
     'encoding',
     'requests',
     'conn_error',
+    'http_error',
     'compat_urlerr',
     'compat_opener',
     'compat_urllib',

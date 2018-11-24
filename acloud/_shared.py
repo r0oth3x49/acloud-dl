@@ -28,6 +28,9 @@ from ._compat import (
                 sys,
                 time,
                 pyver,
+                requests,
+                conn_error,
+                http_error,
                 compat_urlerr,
                 compat_opener,
                 compat_request,
@@ -37,7 +40,6 @@ from ._compat import (
     )
 
 early_py_version = sys.version_info[:2] < (2, 7)
-
 
 class CloudGuruCourse(object):
 
@@ -151,6 +153,7 @@ class CloudGuruLectures(object):
         self._sources_count = 0
 
         self._streams = []
+        self._assets = []
 
     def __repr__(self):
         lecture = "{title}".format(title=self.title)
@@ -182,6 +185,12 @@ class CloudGuruLectures(object):
             self._process_streams()
         return self._streams
 
+    @property
+    def assets(self):
+        if not self._assets:
+            self._process_assets()
+        return self._assets
+
     def _getbest(self):
         streams = self.streams
         if not streams:
@@ -199,6 +208,7 @@ class CloudGuruLectures(object):
         return self._getbest()
 
     def get_quality(self, best_quality='', streams='', requested=''):
+        best = best_quality
         if requested:
             index = 0
             while index < len(streams):
@@ -207,10 +217,6 @@ class CloudGuruLectures(object):
                     best = streams[index]
                     break
                 index += 1
-            if not best:
-                best = best_quality
-        if not requested:
-            best = best_quality
         return best
 
 class CloudGuruLectureStreams(object):
@@ -322,12 +328,16 @@ class CloudGuruLectureStreams(object):
             return retVal
         except compat_httperr as e:
             if e.code == 401:
-                retVal  =   {"status" : "False", "msg" : "Udemy Says (HTTP Error 401 : Unauthorized)"}
+                retVal  =   {"status" : "False", "msg" : "CloudGuru Says (HTTP Error 401 : Unauthorized)"}
             else:
-                retVal  =   {"status" : "False", "msg" : "HTTPError-{} : direct download link is expired run the udemy-dl with '--skip-sub' option ...".format(e.code)}
+                retVal  =   {"status" : "False", "msg" : "HTTPError-{} : direct download link is expired run the CloudGuru-dl with '--skip-sub' option ...".format(e.code)}
             return retVal
         else:
-            total = int(response.info()['Content-Length'].strip())
+            try:
+                total = int(response.info()['Content-Length'].strip())
+            except Exception as e:
+                retVal  =   {"status" : "False", "msg" : "Exception : %s" % (e)}
+                return retVal
             chunksize, bytesdone, t0 = 16384, 0, time.time()
 
             fmode, offset = "wb", 0
@@ -359,9 +369,9 @@ class CloudGuruLectureStreams(object):
                     return retVal
                 except compat_httperr as e:
                     if e.code == 401:
-                        retVal  =   {"status" : "False", "msg" : "Udemy Says (HTTP Error 401 : Unauthorized)"}
+                        retVal  =   {"status" : "False", "msg" : "CloudGuru Says (HTTP Error 401 : Unauthorized)"}
                     else:
-                        retVal  =   {"status" : "False", "msg" : "HTTPError-{} : direct download link is expired run the udemy-dl with '--skip-sub' option ...".format(e.code)}
+                        retVal  =   {"status" : "False", "msg" : "HTTPError-{} : direct download link is expired run the CloudGuru-dl with '--skip-sub' option ...".format(e.code)}
                     return retVal
                 else:
                     bytesdone = offset
@@ -408,3 +418,223 @@ class CloudGuruLectureStreams(object):
                 retVal = {"status" : "True", "msg" : "download"}
 
         return retVal
+
+class CloudGuruLectureLectureAssets(object):
+
+    def __init__(self, parent):
+
+        self._extension = None
+        self._mediatype = None
+        self._url = None
+
+        self._parent = parent
+        self._title = None
+        self._filename = None
+        self._fsize = None
+        self._active = False
+
+    def __repr__(self):
+        out = "%s:%s@%s" % (self.mediatype, self.extension, self.extension)
+        return out
+
+    def _generate_filename(self):
+        ok = re.compile(r'[^\\/:*?"<>|]')
+        filename = "".join(x if ok.match(x) else "_" for x in self.title)
+        filename += ".{}".format(self.extension)
+        return filename
+
+    def _write_external_links(self, filepath):
+        retVal = {}
+        filename = filepath
+        if pyver == 3:
+            with open('{}'.format(filename), 'a', encoding='utf-8') as f:
+                try:
+                    f.write('{}\n'.format(self.url))
+                except Exception as e:
+                    retVal = {'status' : 'False', 'msg' : 'Python3 Exception : {}'.format(e)}
+                else:
+                    retVal = {'status' : 'True', 'msg' : 'download'}
+            f.close()
+        else:
+            with open('{}'.format(filename), 'a') as f:
+                try:
+                    f.write('{}\n'.format(self.url))
+                except Exception as e:
+                    retVal = {'status' : 'False', 'msg' : 'Python2 Exception : {}'.format(e)}
+                else:
+                    retVal = {'status' : 'True', 'msg' : 'download'}
+            f.close()
+        return retVal
+
+    @property
+    def id(self):
+        return self._parent.id
+
+    @property
+    def url(self):
+        return self._url
+
+    @property
+    def extension(self):
+        return self._extension
+
+    @property
+    def title(self):
+        return self._title#self._parent.title
+
+    @property
+    def filename(self):
+        if not self._filename:
+            self._filename = self._generate_filename()
+        return self._filename
+
+    @property
+    def mediatype(self):
+        return self._mediatype
+
+    def get_filesize(self):
+        if not self._fsize:
+            try:
+                cl = 'content-length'
+                self._fsize = int(requests.get(self.url, stream=True, headers={'User-Agent': HEADERS.get('User-Agent')}).headers[cl])
+            except (conn_error, http_error) as e:
+                self._fsize = 0
+        return self._fsize
+
+    def download(self, filepath="", quiet=False, callback=lambda *x: None):
+        savedir = filename = ""
+        retVal  = {}
+
+        if filepath and os.path.isdir(filepath):
+            savedir, filename = filepath, self.filename
+
+        elif filepath:
+            savedir, filename = os.path.split(filepath)
+
+        else:
+            filename = self.filename
+
+        filepath = os.path.join(savedir, filename)
+        
+        if self.mediatype=='external_link':
+            return self._write_external_links(filepath)
+
+        if os.path.isfile(filepath):
+            retVal = {"status" : "True", "msg" : "already downloaded"}
+            return retVal
+        
+        temp_filepath = filepath + ".part"
+
+        status_string = ('  {:,} Bytes [{:.2%}] received. Rate: [{:4.0f} '
+                         'KB/s].  ETA: [{:.0f} secs]')
+
+
+        if early_py_version:
+            status_string = ('  {0:} Bytes [{1:.2%}] received. Rate:'
+                             ' [{2:4.0f} KB/s].  ETA: [{3:.0f} secs]')
+
+        try:    
+            req = compat_request(self.url, headers={'User-Agent' : HEADERS.get('User-Agent')})
+            response = compat_urlopen(req)
+        except compat_urlerr as e:
+            retVal  =   {"status" : "False", "msg" : "URLError : either your internet connection is not working or server aborted the request"}
+            return retVal
+        except compat_httperr as e:
+            if e.code == 401:
+                retVal  =   {"status" : "False", "msg" : "CloudGuru Says (HTTP Error 401 : Unauthorized)"}
+            else:
+                retVal  =   {"status" : "False", "msg" : "HTTPError-{} : direct download link is expired run the CloudGuru-dl again...".format(e.code)}
+            return retVal
+        except Exception as e:
+            retVal  =   {"status" : "False", "msg" : "Exception : %s" % (e)}
+            return retVal
+        else:
+            try:
+                total = int(response.info()['Content-Length'].strip())
+            except Exception as e:
+                retVal  =   {"status" : "False", "msg" : "Exception : %s" % (e)}
+                return retVal
+            chunksize, bytesdone, t0 = 16384, 0, time.time()
+
+            fmode, offset = "wb", 0
+
+            if os.path.exists(temp_filepath):
+                if os.stat(temp_filepath).st_size < total:
+                    offset = os.stat(temp_filepath).st_size
+                    fmode = "ab"
+
+            try:
+                outfh = open(temp_filepath, fmode)
+            except Exception as e:
+                if os.name == 'nt':
+                    file_length = len(temp_filepath)
+                    if file_length > 255:
+                        retVal  =   {"status" : "False", "msg" : "file length is too long to create. try downloading to other drive (e.g :- -o 'E:\\')"}
+                        return retVal
+                retVal  =   {"status" : "False", "msg" : "Reason : {}".format(e)}
+                return retVal
+
+            if offset:
+                resume_opener = compat_opener()
+                resume_opener.addheaders = [('User-Agent', HEADERS.get('User-Agent')),
+                                            ("Range", "bytes=%s-" % offset)]
+                try:
+                    response = resume_opener.open(self.url)
+                except compat_urlerr as e:
+                    retVal  =   {"status" : "False", "msg" : "URLError : either your internet connection is not working or server aborted the request"}
+                    return retVal
+                except compat_httperr as e:
+                    if e.code == 401:
+                        retVal  =   {"status" : "False", "msg" : "CloudGuru Says (HTTP Error 401 : Unauthorized)"}
+                    else:
+                        retVal  =   {"status" : "False", "msg" : "HTTPError-{} : direct download link is expired run the CloudGuru-dl with '--skip-sub' option ...".format(e.code)}
+                    return retVal
+                except Exception as e:
+                    retVal  =   {"status" : "False", "msg" : "Exception : %s" % (e)}
+                    return retVal
+                else:
+                    bytesdone = offset
+
+            self._active = True
+            while self._active:
+                chunk = response.read(chunksize)
+                outfh.write(chunk)
+                elapsed = time.time() - t0
+                bytesdone += len(chunk)
+                if elapsed:
+                    try:
+                        rate = ((float(bytesdone) - float(offset)) / 1024.0) / elapsed
+                        eta  = (total - bytesdone) / (rate * 1024.0)
+                    except ZeroDivisionError as e:
+                        outfh.close()
+                        try:
+                            os.unlink(temp_filepath)
+                        except Exception as e:
+                            pass
+                        retVal = {"status" : "False", "msg" : "ZeroDivisionError : it seems, lecture has malfunction or is zero byte(s) .."}
+                        return retVal
+                else:
+                    rate = 0
+                    eta = 0
+                progress_stats = (bytesdone, bytesdone * 1.0 / total, rate, eta)
+
+                if not chunk:
+                    outfh.close()
+                    break
+                if not quiet:
+                    status = status_string.format(*progress_stats)
+                    sys.stdout.write("\r" + status + ' ' * 4 + "\r")
+                    sys.stdout.flush()
+
+                if callback:
+                    callback(total, *progress_stats)
+
+            if self._active:
+                os.rename(temp_filepath, filepath)
+                retVal = {"status" : "True", "msg" : "download"}
+            else:
+                outfh.close()
+                retVal = {"status" : "True", "msg" : "download"}
+
+        return retVal
+
