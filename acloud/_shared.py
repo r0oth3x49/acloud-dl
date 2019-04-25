@@ -499,6 +499,8 @@ class CloudGuruLectureLectureAssets(object):
                 self._fsize = int(requests.get(self.url, stream=True, headers={'User-Agent': HEADERS.get('User-Agent')}).headers[cl])
             except (conn_error, http_error) as e:
                 self._fsize = 0
+            except Exception as e:
+                self._fsize = 0
         return self._fsize
 
     def download(self, filepath="", quiet=False, callback=lambda *x: None):
