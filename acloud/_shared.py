@@ -497,7 +497,7 @@ class CloudGuruLectureLectureAssets(object):
             try:
                 cl = 'content-length'
                 self._fsize = int(requests.get(self.url, stream=True, headers={'User-Agent': HEADERS.get('User-Agent')}).headers[cl])
-            except (conn_error, http_error) as e:
+            except (conn_error, http_error, KeyError) as e:
                 self._fsize = 0
         return self._fsize
 

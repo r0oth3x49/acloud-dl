@@ -120,14 +120,14 @@ class CloudGuru(ProgressBar):
                 url = entry.get('url')
                 bucket = entry.get('bucket')
                 key = entry.get('key')
-                regex = "^.*\.(?P<extension>jpg|JPG|gif|GIF|doc|DOC|pdf|PDF|zip|ZIP|DOCX|docx|PPT|ppt|PPTX|pptx|pptm|PPTM|txt|TXT|py|PY|C|c|JSON|json|md|MD|HTML|html|htm|HTM|sh|SH|BATCH|batch|bat|bat)$"
+                regex = r"(?i)(?:^.*\.(?P<extension>jpg|gif|doc|pdf|zip|docx|ppt|pptx|pptm|txt|py|c|json|md|html|htm|sh|batch|bat))$"
                 if url:
                     match = re.match(regex, url)
                     if match:
                         extension = match.group('extension')
                         _temp.append({
                                 'url' : url,
-                                'type' : 'file',
+                                'type' : 'file' if 'github' not in url else 'external_link',
                                 'filename' : filename.rsplit('.', 1)[0] if '.' in filename else filename,
                                 'extension' : extension,
                             })
@@ -149,7 +149,6 @@ class CloudGuru(ProgressBar):
                         response = data.json().get('data')
                         if response:
                             url = response['getRestrictedFiles'].get('urls')[0]
-                            regex = "^.*\.(?P<extension>jpg|JPG|gif|GIF|doc|DOC|pdf|PDF|zip|ZIP|DOCX|docx|PPT|ppt|PPTX|pptx|pptm|PPTM|txt|TXT|py|PY|C|c|JSON|json|md|MD|HTML|html|htm|HTM|sh|SH|BATCH|batch|bat|bat).*"
                             match = re.match(regex, url)
                             if match:
                                 extension = match.group('extension')
