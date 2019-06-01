@@ -71,7 +71,10 @@ class CloudGuru(ProgressBar):
 
     def _extract_cookie_string(self, raw_cookies):
         try:
-            access_token = re.search(r'(?is)(Authorization:\s*Bearer\s*(?P<access_token>(.+?)))(\"\s|\s)', raw_cookies).group('access_token')
+            mobj = re.search(r'(?is)(Authorization:\s*Bearer\s*(?P<access_token>(.+?)))(\"\s|\s)', raw_cookies)
+            if not mobj:
+                mobj = re.search(r'(?i)(?:auth0_token=(?P<access_token>[a-zA-Z0-9_.-]+))', raw_cookies)
+            access_token = mobj.group('access_token')
         except:
             sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "Cookies error, Request Headers is required.\n")
             sys.stdout.write(fc + sd + "[" + fm + sb + "i" + fc + sd + "] : " + fg + sb + "Copy Request Headers for single request to a file, while you are logged in.\n")
