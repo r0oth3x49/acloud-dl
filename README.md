@@ -17,14 +17,10 @@
 - Download course to user requested path (option: `-o / --output`).
 - Authentication using cookies (option: `-c / --cookies`).
 
-## ***Extracting Cookies***
+## ***How to login with cookie***
 
- - Login to your acloud.guru account via browser.
- - Once you are logged in right click on page the search for option called **Inspect Element** and click on that.
- - Under that look for **Network Tab** and click on that. Under that **Network Tab** click on Requests type **XHR** .
- - Now click on **Browse Courses** in the acloud.guru navbar and refresh the page you will see some requests under **Network Tab**.
- - Right click on any of the Requests which links to **acloud.guru**. Simply copy **Request Headers** and save to text file.
- - Done run the acloud-dl against that text file it will start downloading the course.
+ - ***Firefox*** users : [guide by @01ttouch](https://github.com/r0oth3x49/acloud-dl/issues/11#issuecomment-497935692)
+ - ***Chrome*** users : [guide by @01ttouch](https://github.com/r0oth3x49/acloud-dl/issues/11#issuecomment-497936314)
 
 ## ***Requirements***
 
