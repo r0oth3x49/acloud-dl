@@ -22,8 +22,8 @@
  - Login to your acloud.guru account via browser.
  - Once you are logged in right click on page the search for option called **Inspect Element** and click on that.
  - Under that look for **Network Tab** and click on that. Under that **Network Tab** click on Requests type **XHR** .
- - Now click on **Browse Courses** in the acloud.guru navbar and refresh the page you will see some requests under **Network Tab**.
- - Right click on any of the Requests which links to **acloud.guru**. Simply copy **Request Headers** and save to text file.
+ - Now click on **Browse Courses** in the acloud.guru navbar, then scroll down and click  **Amazon Web Service** (or **Microsoft Azure**, **Google Cloud Platform**, **Linux**),  refresh the page you will see some requests under **Network Tab**.
+ - Right click on any of the Requests which links to **acloud.guru**. Simply copy **Request Headers**, **view Source**, and save to text file.
  - Done run the acloud-dl against that text file it will start downloading the course.
 
 ## ***Requirements***
@@ -39,14 +39,14 @@
 ## ***Module Installation***
 
 	pip install -r requirements.txt
-	
+
 ## ***Tested on***
 
 - Windows 7/8/8.1/10
 - Kali linux (2017.2)
 - Ubuntu-LTS (64-bit) (tested with super user)
 - Mac OSX 10.9.5 (tested with super user)
- 
+
 ## ***Download acloud-dl***
 
 You can download the latest version of acloud-dl by cloning the GitHub repository.
@@ -68,15 +68,15 @@ You can download the latest version of acloud-dl by cloning the GitHub repositor
 ***Download a course***
 
     python acloud-dl.py -c file_containing_cookie.txt
-  
+
 ***Download course with specific resolution***
 
     python acloud-dl.py -c file_containing_cookie.txt -q 720
-  
+
 ***Download course to a specific location***
 
     python acloud-dl.py -c file_containing_cookie.txt -o "/path/to/directory/"
-  
+
 ***Download course with specific resolution to a specific location***
 
     python acloud-dl.py -c file_containing_cookie.txt -q 720 -o "/path/to/directory/"
