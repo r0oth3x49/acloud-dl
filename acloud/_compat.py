@@ -28,6 +28,7 @@ import os
 import sys
 import time
 import json
+import codecs
 import requests
 if sys.version_info[:2] >= (3, 0):
 
@@ -89,6 +90,7 @@ __ALL__ = [
     'time',
     'json',
     'pyver',
+    "codecs",
     'encoding',
     'requests',
     'conn_error',

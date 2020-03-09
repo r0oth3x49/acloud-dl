@@ -12,13 +12,14 @@ from acloud import __version__
 from acloud._colorized import *
 from acloud._compat import pyver
 from acloud._getpass import GetPass
+from acloud._vtt2srt import WebVtt2Srt
 from acloud._progress import ProgressBar
 from acloud._colorized.banner import banner
 getpass = GetPass()
 
 
 
-class CloudGuru(ProgressBar):
+class CloudGuru(WebVtt2Srt, ProgressBar):
 
 	def __init__(self, cookies=''):
 		self.cookies = cookies
@@ -49,6 +50,7 @@ class CloudGuru(ProgressBar):
 				lecture_best = lecture.getbest()
 				lecture_streams = lecture.streams
 				lecture_assets = lecture.assets
+				# lecture_subs = lecture.subtitle
 				if lecture_streams:
 					sys.stdout.write(fc + sd + "     - " + fy + sb + "duration   : " + fm + sb + str(lecture.duration)+ fy + sb + ".\n")
 					sys.stdout.write(fc + sd + "     - " + fy + sb + "Lecture id : " + fm + sb + str(lecture_id)+ fy + sb + ".\n")
@@ -81,6 +83,23 @@ class CloudGuru(ProgressBar):
 									sz = format(size if size < 1024.00 else size/1024.00, '.2f')
 									in_MB = "MB " if size < 1024.00 else 'GB '
 								sys.stdout.write('\t- ' + fg + sd + "{:<23} {:<8}{}{}{}{}\n".format(str(asset), asset.extension, sz, in_MB, fy, sb))
+
+	def download_subtitles(self, subtitle='', filepath=''):
+		if subtitle:
+			title = subtitle.title + '-' + subtitle.language
+			filename = "%s\\%s" % (filepath, subtitle.filename) if os.name == 'nt' else "%s/%s" % (filepath, subtitle.filename)
+			try:
+				retval = subtitle.download(filepath=filepath, quiet=True)
+			except KeyboardInterrupt:
+				sys.stdout.write (fc + sd + "\n[" + fr + sb + "-" + fc + sd + "] : " + fr + sd + "User Interrupted..\n")
+				sys.exit(0)
+			else:
+				msg = retval.get('msg')
+				# if msg == "already downloaded":
+					# self.convert(filename=filename)
+					# pass
+				if msg == "download":
+					self.convert(filename=filename)
 
 	def download_assets(self, lecture_assets='', filepath=''):
 		if lecture_assets:
@@ -125,11 +144,13 @@ class CloudGuru(ProgressBar):
 				sys.stdout.write (fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Lecture : '%s' " % (lecture_title) + fc + sb + "(download skipped).\n")
 				sys.stdout.write (fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sd + "{}\n".format(msg))
 
-	def download_lectures_only(self, lecture_best='', lecture_title='', inner_index='', lectures_count='', lecture_assets='', filepath=''):
+	def download_lectures_only(self, lecture_best='', lecture_title='', inner_index='', lectures_count='', lecture_assets='', lecture_subs='', filepath=''):
 		if lecture_best:
 			self.download_lectures(lecture_best=lecture_best, lecture_title=lecture_title, inner_index=inner_index, lectures_count=lectures_count, filepath=filepath)
 		if lecture_assets:
 			self.download_assets(lecture_assets=lecture_assets, filepath=filepath)
+		if lecture_subs:
+			self.download_subtitles(subtitle=lecture_subs, filepath=filepath)
 
 	def course_download(self, path='', quality=''):
 		course = acloud.courses(cookies=self.cookies)
@@ -166,8 +187,9 @@ class CloudGuru(ProgressBar):
 				lecture_best = lecture.getbest()
 				lecture_streams = lecture.streams
 				lecture_assets = lecture.assets
+				lecture_subs = lecture.subtitle
 				lecture_best = lecture.get_quality(best_quality=lecture_best, streams=lecture_streams, requested=quality)
-				self.download_lectures_only(lecture_best=lecture_best, lecture_title=lecture_title, inner_index=lecture_index, lectures_count=lectures_count, lecture_assets=lecture_assets, filepath=filepath)
+				self.download_lectures_only(lecture_best=lecture_best, lecture_title=lecture_title, inner_index=lecture_index, lectures_count=lectures_count, lecture_assets=lecture_assets, lecture_subs=lecture_subs, filepath=filepath)
 
 
 def main():

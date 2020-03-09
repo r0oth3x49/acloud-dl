@@ -12,6 +12,7 @@
 ## ***Features***
 
 - Resume capability for a course video.
+- Download subtitle for a lecture.
 - List down course contents and video resolution, suggest the best resolution (option: `-i / --info`).
 - Download lecture(s) requested resolution (option: `-q / --quality`).
 - Download course to user requested path (option: `-o / --output`).

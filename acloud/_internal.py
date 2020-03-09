@@ -32,6 +32,7 @@ from ._shared import (
         CloudGuruCourse, 
         CloudGuruChapters, 
         CloudGuruLectures, 
+        CloudLectureSubtitles,
         CloudGuruLectureStreams,
         CloudGuruLectureLectureAssets
     )
@@ -119,6 +120,10 @@ class InternCloudGuruLecture(CloudGuruLectures):
         assets  =   [InternCloudGuruLectureAssets(z, self) for z in self._info['assets']] if self._assets_count > 0 else []
         self._assets = assets
 
+    def _process_subtitles(self):
+        subtitles = InternCloudLectureSubtitles(self._info['subtitle_url'], self) if self._info['subtitle_url'] else ""
+        self._subtitle = subtitles
+
 
 class InternCloudGuruLectureStream(CloudGuruLectureStreams):
 
@@ -146,3 +151,13 @@ class InternCloudGuruLectureAssets(CloudGuruLectureLectureAssets):
         self._extension = assets.get('extension')
         self._title = '{0:03d} {1!s}'.format(parent._lecture_index, assets.get('filename'))
         self._url = assets.get('url')
+
+class InternCloudLectureSubtitles(CloudLectureSubtitles):
+
+    def __init__(self, subtitle_url, parent):
+        super(InternCloudLectureSubtitles, self).__init__(parent)
+
+        self._mediatype = "sub"
+        self._extension = "vtt"
+        self._language = "en"
+        self._url = subtitle_url

@@ -234,13 +234,13 @@ class CloudGuru(ProgressBar):
         files = ','.join(_temp)
         query = GRAPH_QUERY_DOWNLOAD_LINKS % (files)
         try:
-            data = self._session._post(PROTECTED_GRAPHQL_URL, query)
+            response = self._session._post(PROTECTED_GRAPHQL_URL, query)
         except conn_error as e:
             sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "Connection error : make sure your internet connection is working.\n")
             time.sleep(0.8)
             sys.exit(0)
         else:
-            data = data.json().get('data')
+            data = response.json().get('data')
             if data:
                 data = data['getRestrictedFiles'].get('urls')
                 chapters = course.get('chapters')
@@ -277,11 +277,21 @@ class CloudGuru(ProgressBar):
                 duration = entry['content'].get('duration')
                 extension = entry['content'].get('type')
                 sources = self._extract_sources(sources)
+                subtitle_url = None
+                for  s in sources:
+                    cid = s.get("url")
+                    if cid:
+                        cid = cid.rsplit("/", 1)[-1]
+                        cid = re.search(r"[a-zA-Z0-9]{8}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{12}", cid)
+                        if cid:
+                            subtitle_url = f"https://acloudguru-subtitles-production.s3.amazonaws.com/{cid.group()}.vtt"
+                            break
                 if lecture not in _temp:
                     _temp.append({
                             'lecture_title' : lecture,
                             'lecture_id' : lecture_id,
                             'lecture_index' : lecture_index,
+                            'subtitle_url': subtitle_url,
                             'duration' : duration,
                             'extension' : extension,
                             'sources' : sources,
