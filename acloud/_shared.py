@@ -41,6 +41,54 @@ from ._compat import (
 
 early_py_version = sys.version_info[:2] < (2, 7)
 
+class CloudGuruCourses(object):
+
+    def __init__(self, cookies='', basic=True, callback=None):
+        
+        self._cookies = cookies
+        self._callback = callback or (lambda x: None)
+        self._have_basic_courses = False
+        self._courses_count = 0
+
+        self._courses = []
+
+        if basic:
+            self._fetch_courses()
+
+    def _fetch_courses(self):
+        raise NotImplementedError
+
+    @property
+    def courses(self):
+        return self._courses
+    
+
+
+class CloudGuruCourseDownload(object):
+
+    def __init__(self):
+        self._id = None
+        self._title = None
+        self._course = None
+
+    def __repr__(self):
+        course = "{title}".format(title=self.title)
+        return course
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def title(self):
+        return self._title
+    
+    def get_course(self, keep_alive=True):
+        if not self._course:
+            self._process_course(keep_alive=keep_alive)
+        return self._course
+
+
 class CloudGuruCourse(object):
 
     def __init__(self, cookies='', basic=True, callback=None):

@@ -29,6 +29,8 @@ import time
 from ._colorized import *
 from ._extract import CloudGuru
 from ._shared import (
+        CloudGuruCourses,
+        CloudGuruCourseDownload,
         CloudGuruCourse, 
         CloudGuruChapters, 
         CloudGuruLectures, 
@@ -38,43 +40,58 @@ from ._shared import (
     )
 from ._getpass import GetPass
 
-class InternCloudGuruCourse(CloudGuruCourse, CloudGuru, GetPass):
+class InternCloudGuruCourses(CloudGuruCourses, CloudGuru, GetPass):
     def __init__(self, *args, **kwargs):
         self._info    = ''
-        super(InternCloudGuruCourse, self).__init__(*args, **kwargs)
+        super(InternCloudGuruCourses, self).__init__(*args, **kwargs)
+
+    def _fetch_courses(self):
+        if self._have_basic_courses:
+            return
+        if self._cookies:
+            auth = self._login(cookies=self._cookies)
+        if auth.get('login') == 'successful':
+            courses = self._extract_accessible_courses()
+            self._courses = [InternCloudGuruCourseDownload(c, self) for c in courses]
+            self._have_basic_courses = True
+
+
+class InternCloudGuruCourseDownload(CloudGuruCourseDownload):
+
+    def __init__(self, course, parent):
+        self._info = course
+        self._session = parent._session
+        super(InternCloudGuruCourseDownload, self).__init__()
+        self._id = self._info.get("uniqueid")
+        self._title = self._info.get("title")
+
+    def _process_course(self, keep_alive):
+        self._course = InternCloudGuruCourse(self._info, self._session, keep_alive)
+
+
+
+class InternCloudGuruCourse(CloudGuruCourse, CloudGuru):
+    def __init__(self, course, session, keep_alive):
+        self._info    = ''
+        self._course = course
+        self._session = session
+        self._keep_alive = keep_alive
+        super(InternCloudGuruCourse, self).__init__()
 
     def _fetch_course(self):
         if self._have_basic:
             return
-        if self._cookies:
-            sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading accessible courses information .. \r")
-            auth = self._login(cookies=self._cookies)
-        if auth.get('login') == 'successful':
-            courses = self._extract_accessible_courses()
-            sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading accessible courses information .. (done)\r\n")
-            counter = 1
-            for entry in courses:
-                title = entry.get('title')
-                sys.stdout.write(fc + sd + "[" + fm + sb + "%s" % (counter) + fc + sd + "] : " + fg + sb + "%s\n" % (title))
-                counter += 1
-            question = fc + sd + "[" + fw + sb + "?" + fc + sd + "] : " + fy + sb + "select course number between (1/%s): " % (len(courses))+ fg + sb
-            ask_user = int(self._getuser(prompt=question))
-            if ask_user and ask_user > 0 and ask_user <= len(courses):
-                course_id = courses[ask_user-1].get('uniqueid')
-                sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading course information .. \r")
-                self._info              =       self._real_extract(course_id=course_id)
-                sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloaded course information .. (done)\r\n")
-                self._id                =       self._info['course_id']
-                self._url               =       self._info['course_url']
-                self._title             =       self._info['course_title']
-                self._chapters_count    =       self._info['total_chapters']
-                self._total_lectures    =       self._info['total_lectures']
-                self._chapters          =       [InternCloudGuruChapter(z) for z in self._info['chapters']]
-                self._logout()
-                self._have_basic = True
-            else:
-                sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "User input is required, No input specified ..\n")
-                sys.exit(0)
+        course_id = self._course.get("uniqueid")
+        self._info              =       self._real_extract(course_id=course_id)        
+        self._id                =       self._info['course_id']
+        self._url               =       self._info['course_url']
+        self._title             =       self._info['course_title']
+        self._chapters_count    =       self._info['total_chapters']
+        self._total_lectures    =       self._info['total_lectures']
+        self._chapters          =       [InternCloudGuruChapter(z) for z in self._info['chapters']]
+        if not self._keep_alive:
+            self._logout()
+        self._have_basic = True
 
 
 class InternCloudGuruChapter(CloudGuruChapters):

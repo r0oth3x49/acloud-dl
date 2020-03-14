@@ -23,7 +23,7 @@ THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 '''
 
-from ._internal import InternCloudGuruCourse as CloudGuru
+from ._internal import InternCloudGuruCourses as CloudGuru
 
 
 def courses(cookies='', basic=True, callback=None):
@@ -32,4 +32,4 @@ def courses(cookies='', basic=True, callback=None):
     @params:
         cookies  : acloud.guru authenticated request headers required : type (filename)
     """
-    return CloudGuru(cookies, basic, callback)
+    return CloudGuru(cookies, basic, callback).courses
