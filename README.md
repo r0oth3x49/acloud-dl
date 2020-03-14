@@ -13,6 +13,7 @@
 
 - Resume capability for a course video.
 - Download subtitle for a lecture.
+- Download all courses without any prompt (option: `-a / --all`).
 - List down course contents and video resolution, suggest the best resolution (option: `-i / --info`).
 - Download lecture(s) requested resolution (option: `-q / --quality`).
 - Download course to user requested path (option: `-o / --output`).
@@ -69,6 +70,10 @@ You can download the latest version of acloud-dl by cloning the GitHub repositor
 ***Download a course***
 
     python acloud-dl.py -c file_containing_cookie.txt
+
+***Download all courses***
+
+    python acloud-dl.py -c file_containing_cookie.txt -a
   
 ***Download course with specific resolution***
 
@@ -92,7 +97,7 @@ You can download the latest version of acloud-dl by cloning the GitHub repositor
 <pre><code>
 Author: Nasir khan (<a href="http://r0oth3x49.herokuapp.com/">r0ot h3x49</a>)
 
-usage: acloud-dl.py [-h] [-v] [-c] [-o] [-q] [-i]
+usage: acloud-dl.py [-h] [-v] [-c] [-o] [-q] [-i] [-a]
 
 A cross-platform python based utility to download courses from acloud.guru for
 personal offline use.
@@ -108,6 +113,7 @@ Advance:
   -o , --output    Download to specific directory.
   -q , --quality   Download specific video quality.
   -i, --info       List all lectures with available resolution.
+  -a, --all        Download all courses without any prompt (default: false).
 
 Example:
   python acloud-dl.py -c cookies.txt
