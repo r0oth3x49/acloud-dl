@@ -108,6 +108,10 @@ class CloudGuru(ProgressBar):
             courses = response.json().get('data')
             if courses:
                 courses = courses.get('getAccessibleCourses')
+                for course in courses:
+                    title_clean = self._clean(course.get("title"))
+                    if title_clean:
+                        course.update({"title": title_clean})
                 return courses
             if not courses:
                 if response.headers.get('x-amzn-ErrorType'):
