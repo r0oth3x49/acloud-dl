@@ -107,7 +107,13 @@ class CloudGuru(ProgressBar):
         else:
             courses = response.json().get('data')
             if courses:
-                courses = courses.get('getAccessibleCourses')
+                accessable_courses = courses.get('getAccessibleCourses')
+                if not accessable_courses:
+                    sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "Zero accessable courses: no courses found in your accessable courses.\n")
+                    sys.stdout.write(fc + sd + "[" + fm + sb + "i" + fc + sd + "] : " + fg + sb + "Click 'START THIS COURSE' button to be able to get listed for download..\n")
+                    sys.stdout.write(fc + sd + "[" + fm + sb + "i" + fc + sd + "] : " + fg + sb + "OR follow --> (https://github.com/r0oth3x49/acloud-dl#usage) for proper help..\n")
+                    sys.exit(0)
+                courses = accessable_courses
                 for course in courses:
                     title_clean = self._clean(course.get("title"))
                     if title_clean:
