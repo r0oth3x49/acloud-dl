@@ -691,6 +691,14 @@ class CloudGuruLectureLectureAssets(object):
     def _write_external_links(self, filepath):
         retVal = {}
         filename = filepath
+        if os.name == 'nt':
+            if len(filename) > 255:
+                # Not tested
+                filename = u"\\\\\\\\?\\\\%s"%(filename)
+            if len(filename.split("\\")[-1]) > 110:
+                firstPart = filename.split('\\')[-1][0:100]
+                fileExtension = filename.split('.')[-1]
+                filename = filename.replace(filepath.split("\\")[-1], f"{firstPart}.{fileExtension}")
         if pyver == 3:
             with open('{}'.format(filename), 'a', encoding='utf-8') as f:
                 try:
