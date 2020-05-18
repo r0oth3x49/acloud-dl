@@ -692,13 +692,9 @@ class CloudGuruLectureLectureAssets(object):
         retVal = {}
         filename = filepath
         if os.name == 'nt':
-            if len(filename) > 255:
-                # Not tested
-                filename = u"\\\\\\\\?\\\\%s"%(filename)
-            if len(filename.split("\\")[-1]) > 110:
-                firstPart = filename.split('\\')[-1][0:100]
-                fileExtension = filename.split('.')[-1]
-                filename = filename.replace(filepath.split("\\")[-1], f"{firstPart}.{fileExtension}")
+            # If the absolute path to the file is too long, append the 'magic' prefix
+            if len(os.path.abspath(filename)) > 255:
+                filename = u"\\\\?\\%s"%(os.path.abspath(filename))
         if pyver == 3:
             with open('{}'.format(filename), 'a', encoding='utf-8') as f:
                 try:
