@@ -184,7 +184,11 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
             ask_user = self._getuser(prompt=question)
             if ask_user and ask_user == "all":
                 download_all = True
-            if ask_user and ask_user != "all":
+            elif ask_user and ask_user[-1] == '+':
+                course_number = int(ask_user.split('+')[0])-1
+                if course_number > 0 and course_number < len(courses):
+                    courses = courses[course_number:len(courses)]
+            else:
                 course_number = int(ask_user)-1
                 if course_number > 0 and course_number < len(courses):
                     courses = [courses[course_number]]
