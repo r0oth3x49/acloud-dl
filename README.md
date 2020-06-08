@@ -9,6 +9,9 @@
 
 [![Capture.png](https://s26.postimg.cc/h8nxkvydl/Capture.png)](https://postimg.cc/image/nz4eublj9/)
 
+## Note
+  - You should run this with python3 (latest preferred), In future updates i will completely remove python2 support.
+
 ## ***Features***
 
 - Resume capability for a course video.
@@ -30,7 +33,7 @@
 
 ## ***Requirements***
 
-- Python (2 or 3)
+- Python 3.
 - Python `pip`
 - Python module `requests`
 - Python module `colorama`
