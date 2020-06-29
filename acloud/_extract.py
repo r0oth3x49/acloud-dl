@@ -284,6 +284,8 @@ class CloudGuru(ProgressBar):
             assets = self._extract_assets(assets)
             if content_type == 'video':
                 sources = entry['content'].get('videosources')
+                if not sources:
+                    continue
                 duration = entry['content'].get('duration')
                 extension = entry['content'].get('type')
                 sources = self._extract_sources(sources)
