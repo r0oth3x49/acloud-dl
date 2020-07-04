@@ -276,50 +276,35 @@ def main():
     advance.add_argument(
         '-a', '--all',\
         dest='download_all',\
-        action='store_true',\
+        # action='store_true',\
         help="Download all courses without any prompt (default: false).")
 
     options = parser.parse_args()
 
-    if not options.cookies:
+    cookie_file = options.cookies
+    if not cookie_file:
         
         prompt = fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "cookie filename : " + fg + sb
-        filename = getpass._getuser(prompt=prompt)
+        cookie_file = getpass._getuser(prompt=prompt)
         
-        if os.path.isfile(filename):
-            
-            f_in = open(filename)
-            cookies = '\n'.join([line for line in (l.strip() for l in f_in) if line])
-            f_in.close()
+    if os.path.isfile(cookie_file):
+        
+        f_in = open(cookie_file)
+        cookies = '\n'.join([line for line in (l.strip() for l in f_in) if line])
+        f_in.close()
 
-            acloud = CloudGuru(cookies=cookies)
+        acloud = CloudGuru(cookies=cookies)
 
-            if options.info:
-                acloud.course_list_down()
-
-            if not options.info:
-                acloud.course_download(path=options.output, quality=options.quality, download_all=options.download_all)
-
-        else:
-            sys.stdout.write('\n' + fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "file containing request headers is required.\n")
+        if options.info:
+            acloud.course_list_down(options.download_all)
             sys.exit(0)
 
-    if options.cookies:
-        if os.path.isfile(options.cookies):
-            f_in = open(options.cookies)
-            cookies = '\n'.join([line for line in (l.strip() for l in f_in) if line])
-            f_in.close()
+        if not options.info:
+            acloud.course_download(path=options.output, quality=options.quality, download_all=options.download_all)
 
-            acloud = CloudGuru(cookies=cookies)
-
-            if options.info:
-                acloud.course_list_down()
-
-            if not options.info:
-                acloud.course_download(path=options.output, quality=options.quality, download_all=options.download_all)
-        else:
-            sys.stdout.write('\n' + fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "unable to find file '%s'.\n" % (options.cookies))
-            sys.exit(0)
+    else:
+        sys.stdout.write('\n' + fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "unable to find file containing request headers.\n")
+        sys.exit(0)
 
 if __name__ == '__main__':
     try:
