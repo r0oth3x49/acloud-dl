@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+# pylint: disable=E,C,W,R
 
 '''
 
@@ -41,6 +42,7 @@ from ._compat import (
             GRAPH_QUERY_COURSES,
             GRAPH_QUERY_COURSE_INFO,
             GRAPH_QUERY_DOWNLOAD_LINKS,
+            GRAPH_QUERY_UNPROTECTED_DOWNLOAD_LINKS
             )
 from ._sanitize import (
             slugify,
@@ -183,8 +185,26 @@ class CloudGuru(ProgressBar):
 
     def _extract_sources(self, sources):
         _temp = []
+        def ret_hw(res):
+            height, width = 0, 0
+            if res == "2160p":
+                height, width = 2160, 3840
+            elif res == "1440p":
+                height, width = 1440, 2560
+            elif res == "1080p":
+                height, width = 1080, 1920
+            elif res == "720p":
+                height, width = 720, 1280
+            elif res == "480p":
+                height, width = 480, 854
+            return height, width
         for entry in sources:
             resolution = entry.get('description')
+            key = entry.get('key')
+            if not resolution:
+                mobj = re.search(r"(?is)(?:/[\w\-]+[a-zA-Z0-9]{8}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{12}\-(?P<resolution>[\w\-]+)\.mp4)", key)
+                if mobj:
+                    resolution = mobj.group("resolution")
             if resolution == 'hls' or resolution == 'webm-720p' or resolution == 'web-preset':
                 continue
             if resolution:
@@ -192,17 +212,8 @@ class CloudGuru(ProgressBar):
                 url = entry.get('key')
                 bucket = entry.get('bucket')
                 filesize = entry.get('filesize') or 0
-                query = '''{"bucket": "%s","filePath": "%s"}''' % (bucket, url)
-                if resolution == "2160p":
-                    height, width = 2160, 3840
-                elif resolution == "1440p":
-                    height, width = 1440, 2560
-                elif resolution == "1080p":
-                    height, width = 1080, 1920
-                elif resolution == "720p":
-                    height, width = 720, 1280
-                elif resolution == "480p":
-                    height, width = 480, 854
+                query = {"bucket": bucket,"filePath": url}
+                height, width = ret_hw(resolution)
                 _temp.append({
                         'quality' : resolution,
                         'type' : 'video',
@@ -216,17 +227,24 @@ class CloudGuru(ProgressBar):
             if not resolution:
                 source_type = entry.get('type').replace('video/', '')
                 url = entry.get('key')
+                mobj = re.search(r"(?is)(?:/[\w\-]+[a-zA-Z0-9]{8}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{12}\-(?P<resolution>[\w\-]+)\.mp4)", url)
+                if mobj:
+                    resolution = mobj.group("resolution")
+                if resolution:
+                    height, width = ret_hw(resolution)
                 bucket = entry.get('bucket')
+                if not bucket:
+                    continue
                 filesize = entry.get('filesize') or 0
-                query = '''{"bucket": "%s","filePath": "%s"}''' % (bucket, url)
+                query = {"bucket": bucket,"filePath": url}
                 _temp.append({
                         'quality' : resolution,
                         'type' : 'video',
                         'extension' : source_type,
                         'path' : url,
                         'url' : query,
-                        'height' : 720,
-                        'width' : 1280,
+                        'height' : height,
+                        'width' : width,
                         'size' : filesize
                     })
         return _temp
@@ -236,13 +254,14 @@ class CloudGuru(ProgressBar):
         chapters = course.get('chapters')
         lectures = [l.get('lectures') for l in chapters]
         for lecture in lectures:
-            sources = [s.get('sources') for s in lecture]
+            sources = [s.get('sources') for s in lecture if s.get("type") != "hls"]
             for entry in sources:
                 query = [e.get('url') for e in entry]
                 for _str in query:
                     _temp.append(_str)
-        files = ','.join(_temp)
-        query = GRAPH_QUERY_DOWNLOAD_LINKS % (files)
+        files = {"files": _temp}
+        GRAPH_QUERY_DOWNLOAD_LINKS.update({"variables": files})
+        query = GRAPH_QUERY_DOWNLOAD_LINKS
         try:
             response = self._session._post(PROTECTED_GRAPHQL_URL, query)
         except conn_error as e:
@@ -272,32 +291,83 @@ class CloudGuru(ProgressBar):
                     sys.exit(0)
         return course
 
+    def _fetch_hls_streams_by_content_ids(self, content_ids):
+        _temp = []
+        GRAPH_QUERY_UNPROTECTED_DOWNLOAD_LINKS["variables"].update({"contentIds": content_ids})
+        query = GRAPH_QUERY_UNPROTECTED_DOWNLOAD_LINKS
+        try:
+            response = self._session._post(PROTECTED_GRAPHQL_URL, query)
+        except conn_error as e:
+            sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "Connection error : make sure your internet connection is working.\n")
+            time.sleep(0.8)
+            sys.exit(0)
+        else:
+            data = response.json()
+            unprotected_contents = data.get("data", {}).get("getUnprotectedContents", [])
+            if unprotected_contents:
+                for entry in unprotected_contents:
+                    _id = entry.get("contentId")
+                    sources = entry.get("sources", [])
+                    _sources = []
+                    for s in sources:
+                        source_type = s.get("sourceType")
+                        extension = s.get("ext")
+                        height = s.get("height")
+                        width = s.get("width")
+                        url = s.get("signedUrl")
+                        filesize = int(s.get("fileSize", "0"))
+                        path = s.get("key")
+                        resolution = str(height)
+                        if height and width and source_type == "VIDEO_AUDIO":
+                            _sources.append({
+                                'quality' : resolution,
+                                'type' : 'hls',
+                                'extension' : extension,
+                                'path' : path,
+                                'url' : url,
+                                'height' : height,
+                                'width' : width,
+                                'size' : filesize,
+                                })
+                    if _sources:
+                        _temp.append({"lecture_id": _id, "sources": _sources, "sources_count": len(_sources)})
+        return _temp
+
     def _extract_lectures(self, lectures):
         _temp = []
+        contentid_list = []
         for entry in lectures:
             lecture_title = self._sanitize(entry.get('title'))
             lecture_index = int(entry.get('sequence')) + 1
-            lecture_id = entry.get('componentIdentifier')
+            lecture_id = entry.get('id')
             content_type = entry['content'].get('type')
             lecture = "{0:03d} {1!s}".format(lecture_index, lecture_title)
             assets = entry.get('notes')
             assets = self._extract_assets(assets)
+            duration = entry['content'].get('duration')
+            extension = entry['content'].get('type')
             if content_type == 'video':
+                content_id = entry['content'].get('contentId')
+                if content_id:
+                    contentid_list.append(content_id)
+                    _temp.append({
+                            'lecture_title' : lecture,
+                            'lecture_id' : content_id,
+                            'lecture_index' : lecture_index,
+                            'subtitle_url': None,
+                            'duration' : duration,
+                            'extension' : extension,
+                            'sources' : [],
+                            'assets' : assets,
+                            'sources_count' : 0,
+                            'assets_count' : len(assets)
+                        })
+                    continue
                 sources = entry['content'].get('videosources')
                 if not sources:
                     continue
-                duration = entry['content'].get('duration')
-                extension = entry['content'].get('type')
                 sources = self._extract_sources(sources)
                 subtitle_url = None
-                for  s in sources:
-                    cid = s.get("url")
-                    if cid:
-                        cid = cid.rsplit("/", 1)[-1]
-                        cid = re.search(r"[a-zA-Z0-9]{8}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{12}", cid)
-                        if cid:
-                            subtitle_url = f"https://acloudguru-subtitles-production.s3.amazonaws.com/{cid.group()}.vtt"
-                            break
                 if lecture not in _temp:
                     _temp.append({
                             'lecture_title' : lecture,
@@ -311,12 +381,26 @@ class CloudGuru(ProgressBar):
                             'sources_count' : len(sources),
                             'assets_count' : len(assets)
                         })
+        if contentid_list:
+            streams = self._fetch_hls_streams_by_content_ids(contentid_list)
+            for i in _temp:
+                _id = i.get("lecture_id")
+                text = '\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading course information .. "
+                self._spinner(text)
+                for s in streams:
+                    sid = s.get("lecture_id")
+                    ss = s.get("sources")
+                    sc = s.get("sources_count")
+                    if sid == _id:
+                        i.update({"sources": ss, "sources_count": sc})
         return _temp
 
     def _real_extract(self, course_id):
 
         acloud = {}
-        query = GRAPH_QUERY_COURSE_INFO % (course_id)
+        courses_ids = {"courseIds": [course_id]}
+        GRAPH_QUERY_COURSE_INFO.update({"variables": courses_ids})
+        query = GRAPH_QUERY_COURSE_INFO
 
         try:
             response = self._session._post(PUBLIC_GRAPHQL_URL, query)
@@ -327,7 +411,7 @@ class CloudGuru(ProgressBar):
         else:
             course = response.json().get('data')
             if course:
-                course = course['getCourses'][0]
+                course = course['courseOverviews'][0]
                 course_url = course.get('url')
                 course_title = self._sanitize(course.get('title'))
                 course_id = course.get('uniqueid')
@@ -364,8 +448,5 @@ class CloudGuru(ProgressBar):
                     sys.stdout.write(fc + sd + "[" + fm + sb + "i" + fc + sd + "] : " + fg + sb + "Login again & copy Request headers for a single request to file..\n")
                     sys.exit(0)
 
-        # with open("course.json", "w") as f:
-        #     json.dump(acloud, f, indent=4)
-        # f.close()
-        # exit(0)
+        # json.dump(acloud, open("course.json", "w"), indent=4)
         return acloud

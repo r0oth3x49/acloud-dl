@@ -43,7 +43,7 @@ class Session(object):
         return self._session.get(url, headers=self._headers)
 
     def _post(self, url, data):
-        return self._session.post(url, data, headers=self._headers)
+        return self._session.post(url, json=data, headers=self._headers)
 
     def terminate(self):
         self._set_auth_headers()

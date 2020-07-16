@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+# pylint: disable=E,C,W,R
 
-'''
+"""
 
 Author  : Nasir Khan (r0ot h3x49)
 Github  : https://github.com/r0oth3x49
@@ -21,7 +22,7 @@ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVE
 ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-'''
+"""
 
 import re
 import os
@@ -30,6 +31,7 @@ import time
 import json
 import codecs
 import requests
+
 if sys.version_info[:2] >= (3, 0):
 
     import ssl
@@ -48,9 +50,9 @@ if sys.version_info[:2] >= (3, 0):
 
     encoding, pyver = str, 3
     ssl._create_default_https_context = ssl._create_unverified_context
-    
+
 else:
-    
+
     import urllib2 as compat_urllib
 
     from urllib2 import Request as compat_request
@@ -69,46 +71,65 @@ else:
 
 NO_DEFAULT = object()
 
-PUBLIC_GRAPHQL_URL = 'https://prod-api.acloud.guru/bff/graphql/public'
-PROTECTED_GRAPHQL_URL = 'https://prod-api.acloud.guru/bff/graphql/protected'
+PUBLIC_GRAPHQL_URL = "https://prod-api.acloud.guru/bff/graphql"  # 'https://prod-api.acloud.guru/bff/graphql/public'
+PROTECTED_GRAPHQL_URL = "https://prod-api.acloud.guru/bff/graphql/protected"
 
 # queries ..
-GRAPH_QUERY_COURSES = '''{"query":"query getAccessibleCourses{getAccessibleCourses{...courseFields}}fragment courseFields on CondensedCourse{title,uniqueid}","variables":{}}'''
-GRAPH_QUERY_COURSE_INFO = '''{"query":"query getCourses($courseIds: [String!]!){getCourses(courseIds: $courseIds){title,uniqueid,url,changelogs{date,description}metadata{createdDate,updatedDate,notifyUpdatedDate}sections{title,url,sequence,sectionIdentifier,components{title,url,sequence,componentIdentifier,enhancedSyllabus,description,content{type ... on VideoContent{duration,type,videosources{key,duration,type,bucket,filesize,description}}... on QuizContent{type,quizName}}notes: resources{title,url,bucket,key}}}}}","variables":{"courseIds":["%s"]}}'''
-GRAPH_QUERY_DOWNLOAD_LINKS = '''{"query":"query getRestrictedFiles($files: [Files]!) { getRestrictedFiles(files: $files) { urls } }","variables":{"files":[%s]}}'''
+GRAPH_QUERY_COURSES = {
+    "query": "query getAccessibleCourses{getAccessibleCourses{...courseFields}}fragment courseFields on CondensedCourse{title,uniqueid}",
+    "variables": {},
+}
+# GRAPH_QUERY_COURSE_INFO = {
+#     "query": "query getCourses($courseIds: [String!]!){getCourses(courseIds: $courseIds){title,uniqueid,url,changelogs{date,description}metadata{createdDate,updatedDate,notifyUpdatedDate}sections{title,url,sequence,sectionIdentifier,components{title,url,sequence,componentIdentifier,enhancedSyllabus,description,content{type ... on VideoContent{duration,type,videosources{key,duration,type,bucket,filesize,description}}... on QuizContent{type,quizName}}notes: resources{title,url,bucket,key}}}}}",
+#     "variables": {"courseIds": []},
+# }
+GRAPH_QUERY_DOWNLOAD_LINKS = {
+    "query": "query getRestrictedFiles($files: [Files]!) { getRestrictedFiles(files: $files) { urls } }",
+    "variables": {"files": []},
+}
+GRAPH_QUERY_COURSE_INFO = {
+    "query": 'query courseOverviews($courseIds: [String!]) {courseOverviews(courseIds: $courseIds) {purchaseProductId shortTitle title type id url lectureCount quizCount isPublic publishedDate decommissionedDate duration topics { name } vendors { name } includesPracticeExams includesQuizzes isVisible metadata { createdDate notifyUpdatedDate updatedDate } sections { id courseId description title sequence url components { id title description url sequence courseId sectionId enhancedSyllabus metadata { createdDate notifyUpdatedDate updatedDate }resources { title url key bucket }content { type ... on VideoCourseComponentContent { contentId duration videoposter videosources(filter: { videoType: "video/mp4" }) { duration bucket key filesize type }}... on QuizCourseComponentContent { quizId name quizName quizType duration }... on LabCourseComponentContent { description quickLabsId labImage }... on HandsOnLabComponentContent { labId duration }... on WhitepaperCourseComponentContent { url }... on TextCourseComponentContent { textsources { key bucket }}}}}}}',
+    "variables": {"courseIds": []},
+}
+
+
+GRAPH_QUERY_UNPROTECTED_DOWNLOAD_LINKS = {
+    "query": "query getUnprotectedContents($contentIds: [String!]!) {getUnprotectedContents(contentIds: $contentIds) {contentId,createdDate,transcodeStatus,transcodeStatusMessage,finishedDate,duration,mediaType,thumbnailList {url}sources {...SourceFragment,}adaptiveStreams {playlistKey,ext,streamType,segmentDuration,signedUrl,sources {...SourceFragment,}}}}fragment SourceFragment on AudioVisualSource {sourceType,ext,key,presetId,fileSize,duration,audioBitRate,audioMaxBitRate,frameRate,height,maxHeight,width,maxWidth,videoBitRate,videoMaxBitRate,segmentDuration,signedUrl,}",
+    "variables": {"contentIds": []},
+}
 
 HEADERS = {
-            'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15',
-            'Host' : 'prod-api.acloud.guru',
-            }
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15",
+    "Host": "prod-api.acloud.guru",
+}
 
 
 __ALL__ = [
-    're',
-    'os',
-    'sys',
-    'time',
-    'json',
-    'pyver',
+    "re",
+    "os",
+    "sys",
+    "time",
+    "json",
+    "pyver",
     "codecs",
-    'encoding',
-    'requests',
-    'conn_error',
-    'http_error',
-    'compat_urlerr',
-    'compat_opener',
-    'compat_urllib',
-    'compat_urlopen',
-    'compat_request',
-    'compat_httperr',
-    'compat_urlparse',
-    'compat_HTMLParser',
-    'ParseCookie',
-    'HEADERS',
-    'NO_DEFAULT',
-    'PUBLIC_GRAPHQL_URL',
-    'PROTECTED_GRAPHQL_URL',
-    'GRAPH_QUERY_COURSES',
-    'GRAPH_QUERY_COURSE_INFO',
-    'GRAPH_QUERY_DOWNLOAD_LINKS',
-    ]
+    "encoding",
+    "requests",
+    "conn_error",
+    "http_error",
+    "compat_urlerr",
+    "compat_opener",
+    "compat_urllib",
+    "compat_urlopen",
+    "compat_request",
+    "compat_httperr",
+    "compat_urlparse",
+    "compat_HTMLParser",
+    "ParseCookie",
+    "HEADERS",
+    "NO_DEFAULT",
+    "PUBLIC_GRAPHQL_URL",
+    "PROTECTED_GRAPHQL_URL",
+    "GRAPH_QUERY_COURSES",
+    "GRAPH_QUERY_COURSE_INFO",
+    "GRAPH_QUERY_DOWNLOAD_LINKS",
+]

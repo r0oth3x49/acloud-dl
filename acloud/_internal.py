@@ -166,7 +166,7 @@ class InternCloudGuruLectureAssets(CloudGuruLectureLectureAssets):
 
         self._mediatype = assets.get('type')
         self._extension = assets.get('extension')
-        self._title = '{0:03d} {1!s}'.format(parent._lecture_index, assets.get('filename'))
+        self._title = '{0:03d} '.format(parent._lecture_index) + assets.get('filename')
         self._url = assets.get('url')
 
 class InternCloudLectureSubtitles(CloudLectureSubtitles):

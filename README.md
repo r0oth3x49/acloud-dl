@@ -77,6 +77,17 @@ You can download the latest version of acloud-dl by cloning the GitHub repositor
 ***Download all courses***
 
     python acloud-dl.py -c file_containing_cookie.txt -a
+
+***Download courses by providing range to start from***
+
+    python acloud-dl.py -c file_containing_cookie.txt
+    [1] : Advanced AWS CloudFormation
+    [2] : AWS Certified Security - Specialty 2020
+    [3] : AWS ECS - Scaling Docker
+    [4] : AWS Certified Advanced Networking - Specialty 2020
+    [5] : LPIC-1_ System Administrator
+    [6] : Mastering AWS CloudFormation
+    [?] : provide range (e.g:- 3+) or select course number between (1/6/all/range): 2+
   
 ***Download course with specific resolution***
 

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+# pylint: disable=E,C,W,R
 
 import os
 import sys
@@ -25,7 +26,7 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
         self.cookies = cookies
         super(CloudGuru, self).__init__()
 
-    def course_list_down(self, download_all):
+    def course_list_down(self, download_all=False):
         sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading accessible courses information .. \r")
         courses = acloud.courses(cookies=self.cookies)
         if not download_all:
@@ -180,7 +181,7 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
                 title = course.title
                 sys.stdout.write(fc + sd + "[" + fm + sb + "%s" % (counter) + fc + sd + "] : " + fg + sb + "%s\n" % (title))
                 counter += 1
-            question = fc + sd + "[" + fw + sb + "?" + fc + sd + "] : " + fy + sb + "select course number between (1/%s/all): " % (len(courses))+ fg + sb
+            question = fc + sd + "[" + fw + sb + "?" + fc + sd + "] : " + fy + sb + "provide range (e.g:- 3+) or select course number between (1/%s/all/range): " % (len(courses))+ fg + sb
             ask_user = self._getuser(prompt=question)
             if ask_user and ask_user == "all":
                 download_all = True
