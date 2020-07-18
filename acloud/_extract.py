@@ -154,34 +154,33 @@ class CloudGuru(ProgressBar):
                                 'filename' : filename.rsplit('.', 1)[0] if '.' in filename else filename,
                                 'extension' : 'txt',
                             })
-                if not url and bucket and key:
-                    query = {"bucket": bucket,"filePath": key}
-                    query = GRAPH_QUERY_DOWNLOAD_LINKS % (query)
-                    try:
-                        data = self._session._post(PROTECTED_GRAPHQL_URL, query)
-                    except conn_error:
-                        pass
-                    else:
-                        response = data.json().get('data')
-                        if response:
-                            url = response['getRestrictedFiles'].get('urls')[0]
-                            match = re.match(regex, url)
-                            if match:
-                                extension = match.group('extension')
-                            if not match:
-                                extension = filename.rsplit('.', 1)[-1] if '.' in url else 'zip'
-                            _temp.append({
-                                    'url' : url,
-                                    'type' : 'file',
-                                    'filename' : filename.rsplit('.', 1)[0] if '.' in filename else filename,
-                                    'extension' : extension,
-                                })
-                        if not response:
-                            if data.headers.get('x-amzn-ErrorType'):
-                                sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "Authorization error : it seems your authorization token is expired.\n")
-                                sys.stdout.write(fc + sd + "[" + fm + sb + "i" + fc + sd + "] : " + fg + sb + "Login again & copy Request headers for a single request to file..\n")
-                                sys.exit(0)
-
+                # if not url and bucket and key:
+                #     query = {"bucket": bucket,"filePath": key}
+                #     query = GRAPH_QUERY_DOWNLOAD_LINKS % (query)
+                #     try:
+                #         data = self._session._post(PROTECTED_GRAPHQL_URL, query)
+                #     except conn_error:
+                #         pass
+                #     else:
+                #         response = data.json().get('data')
+                #         if response:
+                #             url = response['getRestrictedFiles'].get('urls')[0]
+                #             match = re.match(regex, url)
+                #             if match:
+                #                 extension = match.group('extension')
+                #             if not match:
+                #                 extension = filename.rsplit('.', 1)[-1] if '.' in url else 'zip'
+                #             _temp.append({
+                #                     'url' : url,
+                #                     'type' : 'file',
+                #                     'filename' : filename.rsplit('.', 1)[0] if '.' in filename else filename,
+                #                     'extension' : extension,
+                #                 })
+                #         if not response:
+                #             if data.headers.get('x-amzn-ErrorType'):
+                #                 sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "Authorization error : it seems your authorization token is expired.\n")
+                #                 sys.stdout.write(fc + sd + "[" + fm + sb + "i" + fc + sd + "] : " + fg + sb + "Login again & copy Request headers for a single request to file..\n")
+                #                 sys.exit(0)
         return _temp
 
     def _extract_sources(self, sources):
