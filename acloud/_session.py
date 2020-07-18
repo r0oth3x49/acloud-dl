@@ -46,5 +46,5 @@ class Session(object):
         return self._session.post(url, json=data, headers=self._headers)
 
     def terminate(self):
-        self._set_auth_headers()
-        return
+        # self._set_auth_headers()
+        pass

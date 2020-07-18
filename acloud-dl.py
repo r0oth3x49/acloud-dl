@@ -36,16 +36,22 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
                 title = course.title
                 sys.stdout.write(fc + sd + "[" + fm + sb + "%s" % (counter) + fc + sd + "] : " + fg + sb + "%s\n" % (title))
                 counter += 1
-            question = fc + sd + "[" + fw + sb + "?" + fc + sd + "] : " + fy + sb + "select course number between (1/%s/all): " % (len(courses))+ fg + sb
+            question = fc + sd + "[" + fw + sb + "?" + fc + sd + "] : " + fy + sb + "select course number or range (1/%s/range): " % (len(courses))+ fg + sb
             ask_user = self._getuser(prompt=question)
-            if ask_user and ask_user == "all":
-                download_all = True
-            if ask_user and ask_user != "all":
-                course_number = int(ask_user)-1
-                if course_number > 0 and course_number < len(courses):
+            # setting default to download all if no user input is provided
+            if ask_user and ask_user[-1] == '+':
+                course_number = int(ask_user.split('+')[0])
+                if course_number > 0 and course_number <= len(courses):
+                    course_number = course_number - 1
+                    courses = courses[course_number:len(courses)]
+            elif ask_user and ask_user[-1] != "+":
+                course_number = int(ask_user)
+                if course_number > 0 and course_number <= len(courses):
+                    course_number = course_number - 1
                     courses = [courses[course_number]]
-            if not ask_user:
+            else:
                 download_all = True
+
         for course in courses:
             course_name = course.title
             sys.stdout.write ("\n" + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Course " + fb + sb + "'%s'.\n" % (course_name))
@@ -181,19 +187,20 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
                 title = course.title
                 sys.stdout.write(fc + sd + "[" + fm + sb + "%s" % (counter) + fc + sd + "] : " + fg + sb + "%s\n" % (title))
                 counter += 1
-            question = fc + sd + "[" + fw + sb + "?" + fc + sd + "] : " + fy + sb + "provide range (e.g:- 3+) or select course number between (1/%s/all/range): " % (len(courses))+ fg + sb
+            question = fc + sd + "[" + fw + sb + "?" + fc + sd + "] : " + fy + sb + "select course number or range (1/%s/range): " % (len(courses))+ fg + sb
             ask_user = self._getuser(prompt=question)
-            if ask_user and ask_user == "all":
-                download_all = True
-            elif ask_user and ask_user[-1] == '+':
-                course_number = int(ask_user.split('+')[0])-1
-                if course_number > 0 and course_number < len(courses):
+            # setting default to download all if no user input is provided
+            if ask_user and ask_user[-1] == '+':
+                course_number = int(ask_user.split('+')[0])
+                if course_number > 0 and course_number <= len(courses):
+                    course_number = course_number - 1
                     courses = courses[course_number:len(courses)]
-            else:
-                course_number = int(ask_user)-1
-                if course_number > 0 and course_number < len(courses):
+            elif ask_user and ask_user[-1] != "+":
+                course_number = int(ask_user)
+                if course_number > 0 and course_number <= len(courses):
+                    course_number = course_number - 1
                     courses = [courses[course_number]]
-            if not ask_user:
+            else:
                 download_all = True
         for course in courses:
             course_name = course.title

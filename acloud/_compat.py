@@ -98,6 +98,11 @@ GRAPH_QUERY_UNPROTECTED_DOWNLOAD_LINKS = {
     "variables": {"contentIds": []},
 }
 
+GRAPH_QUERY_SUBTITLE_LINKS = {
+    "query": "query subtitleTranscription($contentIds: [String!]) {subtitleTranscription(contentIds: $contentIds) {id status transcriptionType subtitleUrl lastUpdated visibility}}",
+    "variables": {"contentIds": []},
+}
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15",
     "Host": "prod-api.acloud.guru",
@@ -132,4 +137,6 @@ __ALL__ = [
     "GRAPH_QUERY_COURSES",
     "GRAPH_QUERY_COURSE_INFO",
     "GRAPH_QUERY_DOWNLOAD_LINKS",
+    "GRAPH_QUERY_SUBTITLE_LINKS",
+    "GRAPH_QUERY_UNPROTECTED_DOWNLOAD_LINKS",
 ]

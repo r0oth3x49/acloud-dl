@@ -42,6 +42,7 @@ from ._compat import (
             GRAPH_QUERY_COURSES,
             GRAPH_QUERY_COURSE_INFO,
             GRAPH_QUERY_DOWNLOAD_LINKS,
+            GRAPH_QUERY_SUBTITLE_LINKS,
             GRAPH_QUERY_UNPROTECTED_DOWNLOAD_LINKS
             )
 from ._sanitize import (
@@ -153,12 +154,12 @@ class CloudGuru(ProgressBar):
                                 'filename' : filename.rsplit('.', 1)[0] if '.' in filename else filename,
                                 'extension' : 'txt',
                             })
-                if not url:
-                    query = '''{"bucket": "%s","filePath": "%s"}''' % (bucket, key)
+                if not url and bucket and key:
+                    query = {"bucket": bucket,"filePath": key}
                     query = GRAPH_QUERY_DOWNLOAD_LINKS % (query)
                     try:
                         data = self._session._post(PROTECTED_GRAPHQL_URL, query)
-                    except conn_error as e:
+                    except conn_error:
                         pass
                     else:
                         response = data.json().get('data')
@@ -333,27 +334,63 @@ class CloudGuru(ProgressBar):
                         _temp.append({"lecture_id": _id, "sources": _sources, "sources_count": len(_sources)})
         return _temp
 
+    def _extract_subtitle(self, sub_ids):
+        _temp = []
+        GRAPH_QUERY_SUBTITLE_LINKS["variables"].update({"contentIds": sub_ids})
+        query = GRAPH_QUERY_SUBTITLE_LINKS
+        try:
+            response = self._session._post(PROTECTED_GRAPHQL_URL, query)
+        except conn_error as e:
+            sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "Connection error : make sure your internet connection is working.\n")
+            time.sleep(0.8)
+            sys.exit(0)
+        else:
+            data = response.json()
+            subtitles  = data.get("data", {}).get("subtitleTranscription", [])
+            if subtitles:
+                for entry in subtitles:
+                    _id = entry.get("id")
+                    url = entry.get("subtitleUrl")
+                    _temp.append({"subtitle_id": _id, "url": url})
+        return _temp
+
+    def _extract_sub_id(self, videoposter):
+        _id = None
+        videoposter = videoposter.rsplit("/", 1)[-1]
+        mobj = re.search(r"[a-zA-Z0-9]{8}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{12}", videoposter)
+        if mobj:
+            _id = mobj.group()
+        return _id
+
     def _extract_lectures(self, lectures):
         _temp = []
         contentid_list = []
+        sub_ids = []
         for entry in lectures:
             lecture_title = self._sanitize(entry.get('title'))
             lecture_index = int(entry.get('sequence')) + 1
             lecture_id = entry.get('id')
             content_type = entry['content'].get('type')
             lecture = "{0:03d} {1!s}".format(lecture_index, lecture_title)
-            assets = entry.get('notes')
+            assets = entry.get('resources')
             assets = self._extract_assets(assets)
             duration = entry['content'].get('duration')
             extension = entry['content'].get('type')
             if content_type == 'video':
+                videoposter = entry['content'].get('videoposter', '')
                 content_id = entry['content'].get('contentId')
+                sub_id = self._extract_sub_id(videoposter)
+                if sub_id and sub_id not in sub_ids:
+                    sub_ids.append(sub_id)
+                if not sub_id and content_id:
+                    sub_ids.append(content_id)
                 if content_id:
                     contentid_list.append(content_id)
                     _temp.append({
                             'lecture_title' : lecture,
                             'lecture_id' : content_id,
                             'lecture_index' : lecture_index,
+                            'subtitle_id': sub_id,
                             'subtitle_url': None,
                             'duration' : duration,
                             'extension' : extension,
@@ -367,13 +404,13 @@ class CloudGuru(ProgressBar):
                 if not sources:
                     continue
                 sources = self._extract_sources(sources)
-                subtitle_url = None
                 if lecture not in _temp:
                     _temp.append({
                             'lecture_title' : lecture,
                             'lecture_id' : lecture_id,
                             'lecture_index' : lecture_index,
-                            'subtitle_url': subtitle_url,
+                            'subtitle_id': sub_id,
+                            'subtitle_url': None,
                             'duration' : duration,
                             'extension' : extension,
                             'sources' : sources,
@@ -393,6 +430,13 @@ class CloudGuru(ProgressBar):
                     sc = s.get("sources_count")
                     if sid == _id:
                         i.update({"sources": ss, "sources_count": sc})
+        if sub_ids:
+            sub_ids = list(set(sub_ids))
+            subtitles = self._extract_subtitle(sub_ids)
+            for i in _temp:
+                for s in subtitles:
+                    if i.get("subtitle_id") == s.get("subtitle_id"):
+                        i.update({"subtitle_url": s.get("url")})
         return _temp
 
     def _real_extract(self, course_id):
@@ -410,6 +454,7 @@ class CloudGuru(ProgressBar):
             sys.exit(0)
         else:
             course = response.json().get('data')
+            # json.dump(course, open("course.json", "w"), indent=4)
             if course:
                 course = course['courseOverviews'][0]
                 course_url = course.get('url')
