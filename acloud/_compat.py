@@ -79,16 +79,12 @@ GRAPH_QUERY_COURSES = {
     "query": "query getAccessibleCourses{getAccessibleCourses{...courseFields}}fragment courseFields on CondensedCourse{title,uniqueid}",
     "variables": {},
 }
-# GRAPH_QUERY_COURSE_INFO = {
-#     "query": "query getCourses($courseIds: [String!]!){getCourses(courseIds: $courseIds){title,uniqueid,url,changelogs{date,description}metadata{createdDate,updatedDate,notifyUpdatedDate}sections{title,url,sequence,sectionIdentifier,components{title,url,sequence,componentIdentifier,enhancedSyllabus,description,content{type ... on VideoContent{duration,type,videosources{key,duration,type,bucket,filesize,description}}... on QuizContent{type,quizName}}notes: resources{title,url,bucket,key}}}}}",
-#     "variables": {"courseIds": []},
-# }
 GRAPH_QUERY_DOWNLOAD_LINKS = {
     "query": "query getRestrictedFiles($files: [Files]!) { getRestrictedFiles(files: $files) { urls } }",
     "variables": {"files": []},
 }
 GRAPH_QUERY_COURSE_INFO = {
-    "query": 'query courseOverviews($courseIds: [String!]) {courseOverviews(courseIds: $courseIds) {purchaseProductId shortTitle title type id url lectureCount quizCount isPublic publishedDate decommissionedDate duration topics { name } vendors { name } includesPracticeExams includesQuizzes isVisible metadata { createdDate notifyUpdatedDate updatedDate } sections { id courseId description title sequence url components { id title description url sequence courseId sectionId enhancedSyllabus metadata { createdDate notifyUpdatedDate updatedDate }resources { title url key bucket }content { type ... on VideoCourseComponentContent { contentId duration videoposter videosources(filter: { videoType: "video/mp4" }) { duration bucket key filesize type }}... on QuizCourseComponentContent { quizId name quizName quizType duration }... on LabCourseComponentContent { description quickLabsId labImage }... on HandsOnLabComponentContent { labId duration }... on WhitepaperCourseComponentContent { url }... on TextCourseComponentContent { textsources { key bucket }}}}}}}',
+    "query": 'query courseOverviews($courseIds: [String!]) {courseOverviews(courseIds: $courseIds) {purchaseProductId shortTitle title type id url lectureCount quizCount isPublic publishedDate decommissionedDate duration topics { name } vendors { name } includesPracticeExams includesQuizzes isVisible metadata { createdDate notifyUpdatedDate updatedDate } sections { id courseId description title sequence url components { id title description url sequence courseId sectionId enhancedSyllabus metadata { createdDate notifyUpdatedDate updatedDate }resources { title url key bucket }content { type ... on VideoCourseComponentContent { contentId duration videoposter videosources(filter: { videoType: "video/mp4" }) { quality duration bucket key filesize type }}... on QuizCourseComponentContent { quizId name quizName quizType duration }... on LabCourseComponentContent { description quickLabsId labImage }... on HandsOnLabComponentContent { labId duration }... on WhitepaperCourseComponentContent { url }... on TextCourseComponentContent { textsources { key bucket }}}}}}}',
     "variables": {"courseIds": []},
 }
 

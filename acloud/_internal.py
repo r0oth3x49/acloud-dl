@@ -131,7 +131,7 @@ class InternCloudGuruLecture(CloudGuruLectures):
 
     def _process_streams(self):
         streams = [InternCloudGuruLectureStream(z, self) for z in self._info['sources']] if self._sources_count > 0 else []
-        self._streams = streams
+        self._streams = sorted(streams, key=lambda k: k.dimention[1])
 
     def _process_assets(self):
         assets  =   [InternCloudGuruLectureAssets(z, self) for z in self._info['assets']] if self._assets_count > 0 else []

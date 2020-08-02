@@ -221,7 +221,6 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
               path = os.getcwd()
               course_path = "%s\\%s" % (path, course_name) if os.name == 'nt' else "%s/%s" % (path, course_name)
             for chapter in chapters:
-              # chapter_id = chapter.id
               chapter_index = chapter.index
               chapter_title = chapter.title
               lectures = chapter.get_lectures()
@@ -232,7 +231,6 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
               sys.stdout.write (fc + sd + "[" + fw + sb + "+" + fc + sd + "] : " + fw + sd + "Chapter (%s)\n" % (chapter_title))
               sys.stdout.write (fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Found (%s) lectures ...\n" % (lectures_count))
               for lecture in lectures:
-                  # lecture_id = lecture.id
                   lecture_index = lecture.index
                   lecture_title = lecture.title
                   lecture_best = lecture.getbest()

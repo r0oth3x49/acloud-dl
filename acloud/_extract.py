@@ -199,10 +199,10 @@ class CloudGuru(ProgressBar):
                 height, width = 480, 854
             return height, width
         for entry in sources:
-            resolution = entry.get('description')
+            resolution = entry.get('quality')
             key = entry.get('key')
             if not resolution:
-                mobj = re.search(r"(?is)(?:/[\w\-]+[a-zA-Z0-9]{8}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{12}\-(?P<resolution>[\w\-]+)\.mp4)", key)
+                mobj = re.search(r"(?is)(?P<resolution>(?:2160|1440|1080|720|480|360)p)", key)
                 if mobj:
                     resolution = mobj.group("resolution")
             if resolution == 'hls' or resolution == 'webm-720p' or resolution == 'web-preset':
@@ -227,16 +227,14 @@ class CloudGuru(ProgressBar):
             if not resolution:
                 source_type = entry.get('type').replace('video/', '')
                 url = entry.get('key')
-                mobj = re.search(r"(?is)(?:/[\w\-]+[a-zA-Z0-9]{8}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{12}\-(?P<resolution>[\w\-]+)\.mp4)", url)
-                if mobj:
-                    resolution = mobj.group("resolution")
-                if resolution:
-                    height, width = ret_hw(resolution)
                 bucket = entry.get('bucket')
-                if not bucket:
-                    continue
                 filesize = entry.get('filesize') or 0
                 query = {"bucket": bucket,"filePath": url}
+                # if acloud does not return the quality/resoltion hard code the height and width
+                # this hack will get all the sources without breaking any functionality.
+                # example course "Docker for DevOps - From Development to Production"
+                # 1st chapter's lectures don't have any resolution/quality.
+                height, width = 720, 1280
                 _temp.append({
                         'quality' : resolution,
                         'type' : 'video',
@@ -249,17 +247,26 @@ class CloudGuru(ProgressBar):
                     })
         return _temp
 
-    def _extract_course_information(self, course):
+    def _fetch_queryable(self, course):
         _temp = []
         chapters = course.get('chapters')
         lectures = [l.get('lectures') for l in chapters]
         for lecture in lectures:
-            sources = [s.get('sources') for s in lecture if s.get("type") != "hls"]
+            sources = [s.get('sources') for s in lecture]
             for entry in sources:
-                query = [e.get('url') for e in entry]
-                for _str in query:
-                    _temp.append(_str)
+                query = [e.get('url') for e in entry if e.get("type") != "hls"]
+                for queryable in query:
+                    _temp.append(queryable)
+        if _temp:
+            _temp = [
+                    dict(tupleized)
+                    for tupleized in set(tuple(item.items()) for item in _temp)
+                ]
         files = {"files": _temp}
+        return files
+
+    def _extract_course_information(self, course):
+        files = self._fetch_queryable(course=course)
         GRAPH_QUERY_DOWNLOAD_LINKS.update({"variables": files})
         query = GRAPH_QUERY_DOWNLOAD_LINKS
         try:
@@ -271,14 +278,14 @@ class CloudGuru(ProgressBar):
         else:
             data = response.json().get('data')
             if data:
-                data = data['getRestrictedFiles'].get('urls')
+                data = data['getRestrictedFiles'].get('urls', [])
                 chapters = course.get('chapters')
-                for entry in chapters:
-                    lectures = entry.get('lectures')
-                    for entry in lectures:
+                for chap in chapters:
+                    lectures = chap.get('lectures')
+                    for lec in lectures:
                         text = '\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading course information .. "
                         self._spinner(text)
-                        sources = entry.get('sources')
+                        sources = lec.get('sources')
                         for entry in sources:
                             path = entry.get('path')
                             for url in data:
@@ -354,11 +361,12 @@ class CloudGuru(ProgressBar):
         return _temp
 
     def _extract_sub_id(self, videoposter):
-        _id = None
-        videoposter = videoposter.rsplit("/", 1)[-1]
-        mobj = re.search(r"[a-zA-Z0-9]{8}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{12}", videoposter)
-        if mobj:
-            _id = mobj.group()
+        _id = ""
+        if videoposter:
+            videoposter = videoposter.rsplit("/", 1)[-1]
+            mobj = re.search(r"[a-zA-Z0-9]{8}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{4}\-[a-zA-Z0-9]{12}", videoposter)
+            if mobj:
+                _id = mobj.group()
         return _id
 
     def _extract_lectures(self, lectures):
