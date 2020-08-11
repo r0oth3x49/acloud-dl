@@ -43,6 +43,7 @@ from ._compat import (
             GRAPH_QUERY_COURSE_INFO,
             GRAPH_QUERY_DOWNLOAD_LINKS,
             GRAPH_QUERY_SUBTITLE_LINKS,
+            GRAPH_QUERY_UseHasCourseAccess,
             GRAPH_QUERY_UNPROTECTED_DOWNLOAD_LINKS
             )
 from ._sanitize import (
@@ -102,7 +103,7 @@ class CloudGuru(ProgressBar):
 
     def _extract_accessible_courses(self):
         try:
-            response = self._session._post(PUBLIC_GRAPHQL_URL, GRAPH_QUERY_COURSES)
+            response = self._session._post(PUBLIC_GRAPHQL_URL, GRAPH_QUERY_UseHasCourseAccess)
         except conn_error as e:
             sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "Connection error : make sure your internet connection is working.\n")
             time.sleep(0.8)
@@ -110,7 +111,7 @@ class CloudGuru(ProgressBar):
         else:
             courses = response.json().get('data')
             if courses:
-                accessable_courses = courses.get('getAccessibleCourses')
+                accessable_courses = courses.get('getAccessibleCourses') or courses.get("userAccessibleCourses")
                 if not accessable_courses:
                     sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "Zero accessable courses: no courses found in your accessable courses.\n")
                     sys.stdout.write(fc + sd + "[" + fm + sb + "i" + fc + sd + "] : " + fg + sb + "Click 'START THIS COURSE' button to be able to get listed for download..\n")
@@ -123,10 +124,19 @@ class CloudGuru(ProgressBar):
                         course.update({"title": title_clean})
                 return courses
             if not courses:
+                sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading accessible courses information .. (" + fr + sb + "failed" + fg + sb + ")\r\n")
+                errors = response.json().get("errors")
                 if response.headers.get('x-amzn-ErrorType'):
                     sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "Authorization error : it seems your authorization token is expired.\n")
                     sys.stdout.write(fc + sd + "[" + fm + sb + "i" + fc + sd + "] : " + fg + sb + "Login again & copy Request headers for a single request to file..\n")
                     sys.exit(0)
+                if errors:
+                    for error in errors:
+                        msg = error.get("message")
+                        sys.stdout.write(fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "acloud-guru Says : {}.\n".format(msg))
+                    sys.stdout.write(fc + sd + "[" + fm + sb + "i" + fc + sd + "] : " + fg + sb + "Report the issue to 'https://github.com/r0oth3x49/acloud-dl/issues'\n")
+                    sys.exit(0)
+
 
     def _extract_assets(self, assets):
         _temp = []

@@ -62,7 +62,7 @@ class InternCloudGuruCourseDownload(CloudGuruCourseDownload):
         self._info = course
         self._session = parent._session
         super(InternCloudGuruCourseDownload, self).__init__()
-        self._id = self._info.get("uniqueid")
+        self._id = self._info.get("uniqueid") or self._info.get("id")
         self._title = self._info.get("title")
 
     def _process_course(self, keep_alive):
@@ -81,7 +81,7 @@ class InternCloudGuruCourse(CloudGuruCourse, CloudGuru):
     def _fetch_course(self):
         if self._have_basic:
             return
-        course_id = self._course.get("uniqueid")
+        course_id = self._course.get("uniqueid") or self._course.get("id")
         self._info              =       self._real_extract(course_id=course_id)        
         self._id                =       self._info['course_id']
         self._url               =       self._info['course_url']

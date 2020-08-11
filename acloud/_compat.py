@@ -99,6 +99,12 @@ GRAPH_QUERY_SUBTITLE_LINKS = {
     "variables": {"contentIds": []},
 }
 
+GRAPH_QUERY_UseHasCourseAccess = {
+    "operationName": "UseHasCourseAccess",
+    "variables": {},
+    "query": "query UseHasCourseAccess {\n  userAccessibleCourses(courseIds: []) {\n    id\n  title\n  __typename\n  }\n}\n",
+}
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1 Safari/605.1.15",
     "Host": "prod-api.acloud.guru",
@@ -134,5 +140,6 @@ __ALL__ = [
     "GRAPH_QUERY_COURSE_INFO",
     "GRAPH_QUERY_DOWNLOAD_LINKS",
     "GRAPH_QUERY_SUBTITLE_LINKS",
+    "GRAPH_QUERY_UseHasCourseAccess",
     "GRAPH_QUERY_UNPROTECTED_DOWNLOAD_LINKS",
 ]

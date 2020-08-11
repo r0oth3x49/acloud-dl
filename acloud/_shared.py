@@ -361,6 +361,8 @@ class CloudGuruLectureStreams(object):
             filename = self.filename
 
         filepath = os.path.join(savedir, filename)
+        if os.name == "nt" and len(filepath) > 250:
+            filepath = "\\\\?\\{}".format(filepath)
 
         if os.path.isfile(filepath):
             retVal = {"status" : "True", "msg" : "already downloaded"}
@@ -542,6 +544,8 @@ class CloudLectureSubtitles(object):
             filename = self.filename
 
         filepath = os.path.join(savedir, filename)
+        if os.name == "nt" and len(filepath) > 250:
+            filepath = "\\\\?\\{}".format(filepath)
         
         if filepath and filepath.endswith('.vtt'):
             filepath_vtt2srt = filepath.replace('.vtt', '.srt')
@@ -764,6 +768,8 @@ class CloudGuruLectureLectureAssets(object):
             filename = self.filename
 
         filepath = os.path.join(savedir, filename)
+        if os.name == "nt" and len(filepath) > 250:
+            filepath = "\\\\?\\{}".format(filepath)
         
         if self.mediatype=='external_link':
             return self._write_external_links(filepath)
