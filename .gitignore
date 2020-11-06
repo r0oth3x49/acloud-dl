@@ -96,3 +96,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# Cookie file
+file_containing_cookie.txt
