@@ -24,18 +24,25 @@ THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
 from ._compat import (
-                        os,
-                        re,
-                        sys,
-                        pyver,
-                        codecs,
-                        compat_HTMLParser
-                        )
+    os,
+    re,
+    sys,
+    pyver,
+    codecs,
+
+)
+import sys
+if sys.version_info[0] >= 3:
+    import html
+else:
+    from ._compat import compat_HTMLParser
+    html = compat_HTMLParser()
+
 
 def unescapeHTML(s):
-    clean   = compat_HTMLParser()
-    data    = clean.unescape(s)
+    data = html.unescape(s)
     return data
+
 
 class WebVtt2Srt(object):
 
@@ -46,11 +53,10 @@ class WebVtt2Srt(object):
         try:
             f = codecs.open(filename=fname, encoding='utf-8', errors='ignore')
         except Exception as e:
-            return {'status' : 'False', 'msg' : 'failed to open file : file not found ..'}
+            return {'status': 'False', 'msg': 'failed to open file : file not found ..'}
         content = [line for line in (l.strip() for l in f)]
         f.close()
         return content
-        
 
     def _write_srtcontent(self, fname, content):
         with codecs.open(filename=fname, mode='a', encoding='utf-8') as fd:
@@ -61,8 +67,8 @@ class WebVtt2Srt(object):
         for (loc, line) in enumerate(content):
             match = re.match(self._TIMECODE_REGEX, line, flags=re.U)
             if match:
-                return {'status' : True, 'location' : loc}
-        return {'status' : False, 'location' : loc}
+                return {'status': True, 'location': loc}
+        return {'status': False, 'location': loc}
 
     def _is_timecode(self, timecode):
         match = re.match(self._TIMECODE_REGEX, timecode, flags=re.U)
@@ -81,7 +87,8 @@ class WebVtt2Srt(object):
     def _generate_timecode(self, sequence, timecode):
         match = re.match(self._TIMECODE, timecode, flags=re.U)
         if match:
-            start, end = self._fix_timecode(timecode=re.sub(r'[\.,]', ',', match.group('appeartime'))), self._fix_timecode(timecode=re.sub(r'[\.,]', ',', match.group('disappertime')))
+            start, end = self._fix_timecode(timecode=re.sub(r'[\.,]', ',', match.group(
+                'appeartime'))), self._fix_timecode(timecode=re.sub(r'[\.,]', ',', match.group('disappertime')))
             return u'{seq}\r\n{appeartime} --> {disappertime}\r\n'.format(seq=sequence, appeartime=start, disappertime=end)
         return u''
 
@@ -93,11 +100,12 @@ class WebVtt2Srt(object):
             if content and isinstance(content, list):
                 timecode_loc = self._locate_timecode(content)
                 if not timecode_loc.get('status'):
-                    return {'status' : 'False', 'msg' : 'subtitle file seems to have malfunction skipping conversion ..'}
+                    return {'status': 'False', 'msg': 'subtitle file seems to have malfunction skipping conversion ..'}
                 for line in content[timecode_loc.get('location'):]:
                     flag = self._is_timecode(timecode=line)
                     if flag:
-                        timecode = self._generate_timecode(seq, unescapeHTML(line))
+                        timecode = self._generate_timecode(
+                            seq, unescapeHTML(line))
                         self._write_srtcontent(fname, timecode)
                         seq += 1
                     if not flag:
@@ -107,10 +115,10 @@ class WebVtt2Srt(object):
                             self._write_srtcontent(fname, data)
             else:
                 return content
-            
+
             if remove_vtt:
                 try:
                     os.unlink(filename)
                 except Exception as e:
                     pass
-        return {'status' : 'True', 'msg' : 'successfully generated subtitle in srt ...'}
+        return {'status': 'True', 'msg': 'successfully generated subtitle in srt ...'}
