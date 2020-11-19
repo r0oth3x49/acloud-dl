@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-'''
+"""
 
 Author  : Nasir Khan (r0ot h3x49)
 Github  : https://github.com/r0oth3x49
@@ -21,17 +21,17 @@ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVE
 ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-'''
+"""
 
 from pprint import pprint
 from ._session import Session
 
-class CloudGuruAuth(object):
 
+class CloudGuruAuth(object):
     def __init__(self):
         self._session = Session()
 
-    def authenticate(self, access_token=''):
+    def authenticate(self, access_token=""):
         if access_token:
             self._session._set_auth_headers(access_token=access_token)
             return self._session

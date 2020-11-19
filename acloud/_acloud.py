@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-'''
+"""
 
-Author 	: Nasir Khan (r0ot h3x49)
-Github 	: https://github.com/r0oth3x49
+Author  : Nasir Khan (r0ot h3x49)
+Github  : https://github.com/r0oth3x49
 License : MIT
 
 
@@ -21,12 +21,12 @@ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVE
 ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-'''
+"""
 
 from ._internal import InternCloudGuruCourses as CloudGuru
 
 
-def courses(cookies='', basic=True, callback=None):
+def courses(cookies="", basic=True, callback=None):
     """Returns acloud.guru course instance.
 
     @params:

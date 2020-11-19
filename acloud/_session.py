@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-'''
+"""
 
 Author  : Nasir Khan (r0ot h3x49)
 Github  : https://github.com/r0oth3x49
@@ -21,23 +21,21 @@ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVE
 ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-'''
+"""
 
 from ._compat import (
-    
-                requests,
-                HEADERS,
-            )
+    requests,
+    HEADERS,
+)
 
 
 class Session(object):
-
     def __init__(self):
         self._headers = HEADERS
         self._session = requests.sessions.Session()
 
-    def _set_auth_headers(self, access_token=''):
-        self._headers['Authorization'] = "Bearer {}".format(access_token)
+    def _set_auth_headers(self, access_token=""):
+        self._headers["Authorization"] = "Bearer {}".format(access_token)
 
     def _get(self, url):
         return self._session.get(url, headers=self._headers)

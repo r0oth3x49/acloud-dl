@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-'''
+"""
 
 Author  : Nasir Khan (r0ot h3x49)
 Github  : https://github.com/r0oth3x49
@@ -20,20 +20,21 @@ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVE
 ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-'''
+"""
 
 import os
 import sys
 import time
-if os.name == 'nt':
+
+if os.name == "nt":
     import msvcrt
     from msvcrt import getch as _win_getch
 else:
     import tty
     import termios
 
-class GetPass(object):
 
+class GetPass(object):
     def _unix_getch(self):
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
@@ -43,38 +44,38 @@ class GetPass(object):
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
-    
-    def _getuser(self, prompt='Username : '):
+
+    def _getuser(self, prompt="Username : "):
         """Prompt for Username """
         if sys.version_info[:2] >= (3, 0):
-            sys.stdout.write('{}'.format(prompt))
+            sys.stdout.write("{}".format(prompt))
             sys.stdout.flush()
             username = input()
         else:
-            sys.stdout.write('{}'.format(prompt))
+            sys.stdout.write("{}".format(prompt))
             sys.stdout.flush()
             username = raw_input()
         return username
 
-    def _getpass(self, prompt='Password : '):
+    def _getpass(self, prompt="Password : "):
         """Prompt for password and replace each character by asterik (*)"""
-        sys.stdout.write('{}'.format(prompt))
+        sys.stdout.write("{}".format(prompt))
         sys.stdout.flush()
         pw = ""
         while True:
-            c = _win_getch() if os.name == 'nt' else self._unix_getch()
-            if os.name == 'nt':
+            c = _win_getch() if os.name == "nt" else self._unix_getch()
+            if os.name == "nt":
                 if ord(c) == 13:
                     break
                 if ord(c) == 3:
                     raise KeyboardInterrupt
                 if ord(c) == 8:
                     if len(pw) > 0:
-                        pw  = pw[:-1]
-                        s   = "*" * len(pw)
-                        sys.stdout.write('\033[2K\033[1G')
+                        pw = pw[:-1]
+                        s = "*" * len(pw)
+                        sys.stdout.write("\033[2K\033[1G")
                         sys.stdout.flush()
-                        sys.stdout.write('\r\r\r{}{}'.format(prompt, s))
+                        sys.stdout.write("\r\r\r{}{}".format(prompt, s))
                         sys.stdout.flush()
                     else:
                         pass
@@ -86,10 +87,10 @@ class GetPass(object):
                         pass
                     else:
                         if sys.version_info[:2] >= (3, 0):
-                            pw = pw + c.decode('utf-8')
+                            pw = pw + c.decode("utf-8")
                         else:
                             pw = pw + c
-                        sys.stdout.write('*')
+                        sys.stdout.write("*")
                         sys.stdout.flush()
             else:
                 if ord(c) == 13:
@@ -98,11 +99,11 @@ class GetPass(object):
                     raise KeyboardInterrupt
                 if ord(c) == 127:
                     if len(pw) > 0:
-                        pw  = pw[:-1]
-                        s   = "*" * len(pw)
-                        sys.stdout.write('\033[2K\033[1G')
+                        pw = pw[:-1]
+                        s = "*" * len(pw)
+                        sys.stdout.write("\033[2K\033[1G")
                         sys.stdout.flush()
-                        sys.stdout.write('\r\r\r{}{}'.format(prompt, s))
+                        sys.stdout.write("\r\r\r{}{}".format(prompt, s))
                         sys.stdout.flush()
                     else:
                         pass

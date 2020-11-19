@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 
 __version__ = "0.1"
-__author__  = "Nasir Khan (r0ot h3x49)"
-__license__ = 'MIT'
-__copyright__ = 'Copyright (c) 2018 Nasir Khan (r0ot h3x49)'
+__author__ = "Nasir Khan (r0ot h3x49)"
+__license__ = "MIT"
+__copyright__ = "Copyright (c) 2018 Nasir Khan (r0ot h3x49)"
 
-'''
+"""
 
-Author 	: Nasir Khan (r0ot h3x49)
-Github 	: https://github.com/r0oth3x49
+Author  : Nasir Khan (r0ot h3x49)
+Github  : https://github.com/r0oth3x49
 License : MIT
 
 
@@ -26,7 +26,7 @@ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVE
 ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-'''
+"""
 
 
 from ._acloud import courses

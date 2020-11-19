@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-'''
+"""
 
 Author  : Nasir Khan (r0ot h3x49)
 Github  : https://github.com/r0oth3x49
@@ -20,31 +20,31 @@ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVE
 ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-'''
+"""
 
 from ._compat import (
-                re,
-                os,
-                sys,
-                time,
-                pyver,
-                requests,
-                conn_error,
-                http_error,
-                compat_urlerr,
-                compat_opener,
-                compat_request,
-                compat_urlopen,
-                compat_httperr,
-                HEADERS
-    )
+    re,
+    os,
+    sys,
+    time,
+    pyver,
+    requests,
+    conn_error,
+    http_error,
+    compat_urlerr,
+    compat_opener,
+    compat_request,
+    compat_urlopen,
+    compat_httperr,
+    HEADERS,
+)
 
 early_py_version = sys.version_info[:2] < (2, 7)
 
-class CloudGuruCourses(object):
 
-    def __init__(self, cookies='', basic=True, callback=None):
-        
+class CloudGuruCourses(object):
+    def __init__(self, cookies="", basic=True, callback=None):
+
         self._cookies = cookies
         self._callback = callback or (lambda x: None)
         self._have_basic_courses = False
@@ -61,11 +61,9 @@ class CloudGuruCourses(object):
     @property
     def courses(self):
         return self._courses
-    
 
 
 class CloudGuruCourseDownload(object):
-
     def __init__(self):
         self._id = None
         self._title = None
@@ -82,7 +80,7 @@ class CloudGuruCourseDownload(object):
     @property
     def title(self):
         return self._title
-    
+
     def get_course(self, keep_alive=True):
         if not self._course:
             self._process_course(keep_alive=keep_alive)
@@ -90,9 +88,8 @@ class CloudGuruCourseDownload(object):
 
 
 class CloudGuruCourse(object):
+    def __init__(self, cookies="", basic=True, callback=None):
 
-    def __init__(self, cookies='', basic=True, callback=None):
-        
         self._cookies = cookies
         self._callback = callback or (lambda x: None)
         self._have_basic = False
@@ -146,16 +143,16 @@ class CloudGuruCourse(object):
             self._fetch_course()
         return self._chapters
 
-    def create_chapter(self, filepath=''):
+    def create_chapter(self, filepath=""):
         try:
             os.makedirs(filepath)
         except Exception as e:
-            return {'msg' : 'exists'}
+            return {"msg": "exists"}
         else:
-            return {'msg' : 'created'}
+            return {"msg": "created"}
+
 
 class CloudGuruChapters(object):
-    
     def __init__(self):
 
         self._chapter_id = None
@@ -180,7 +177,7 @@ class CloudGuruChapters(object):
     @property
     def title(self):
         return self._chapter_title
-    
+
     @property
     def lectures(self):
         return self._lectures_count
@@ -188,15 +185,15 @@ class CloudGuruChapters(object):
     def get_lectures(self):
         return self._lectures
 
+
 class CloudGuruLectures(object):
-    
     def __init__(self):
 
         self._best = None
         self._duration = None
         self._extension = None
         self._lecture_id = None
-        self._lecture_title  =   None
+        self._lecture_title = None
         self._lecture_index = None
         self._sources_count = 0
 
@@ -207,7 +204,7 @@ class CloudGuruLectures(object):
     def __repr__(self):
         lecture = "{title}".format(title=self.title)
         return lecture
-    
+
     @property
     def id(self):
         return self._lecture_id
@@ -219,7 +216,7 @@ class CloudGuruLectures(object):
     @property
     def title(self):
         return self._lecture_title
-    
+
     @property
     def duration(self):
         return self._duration
@@ -245,25 +242,25 @@ class CloudGuruLectures(object):
         if not self._subtitle:
             self._process_subtitles()
         return self._subtitle
-    
 
     def _getbest(self):
         streams = self.streams
         if not streams:
             return None
+
         def _sortkey(x, keyres=0, keyftype=0):
-            keyres = int(x.resolution.split('x')[0])
+            keyres = int(x.resolution.split("x")[0])
             keyftype = x.extension
             st = (keyftype, keyres)
             return st
-        
+
         self._best = max(streams, key=_sortkey)
         return self._best
 
     def getbest(self):
         return self._getbest()
 
-    def get_quality(self, best_quality='', streams='', requested=''):
+    def get_quality(self, best_quality="", streams="", requested=""):
         best = best_quality
         if requested:
             index = 0
@@ -275,8 +272,8 @@ class CloudGuruLectures(object):
                 index += 1
         return best
 
+
 class CloudGuruLectureStreams(object):
-    
     def __init__(self, parent):
 
         self._mediatype = None
@@ -349,7 +346,7 @@ class CloudGuruLectureStreams(object):
 
     def download(self, filepath="", quiet=False, callback=lambda *x: None):
         savedir = filename = ""
-        retVal  = {}
+        retVal = {}
 
         if filepath and os.path.isdir(filepath):
             savedir, filename = filepath, self.filename
@@ -365,36 +362,52 @@ class CloudGuruLectureStreams(object):
             filepath = "\\\\?\\{}".format(filepath)
 
         if os.path.isfile(filepath):
-            retVal = {"status" : "True", "msg" : "already downloaded"}
+            retVal = {"status": "True", "msg": "already downloaded"}
             return retVal
-        
+
         temp_filepath = filepath + ".part"
 
-        status_string = ('  {:,} Bytes [{:.2%}] received. Rate: [{:4.0f} '
-                         'KB/s].  ETA: [{:.0f} secs]')
-
+        status_string = (
+            "  {:,} Bytes [{:.2%}] received. Rate: [{:4.0f} "
+            "KB/s].  ETA: [{:.0f} secs]"
+        )
 
         if early_py_version:
-            status_string = ('  {0:} Bytes [{1:.2%}] received. Rate:'
-                             ' [{2:4.0f} KB/s].  ETA: [{3:.0f} secs]')
+            status_string = (
+                "  {0:} Bytes [{1:.2%}] received. Rate:"
+                " [{2:4.0f} KB/s].  ETA: [{3:.0f} secs]"
+            )
 
-        try:    
-            req = compat_request(self.url, headers={'User-Agent' : HEADERS.get('User-Agent')})
+        try:
+            req = compat_request(
+                self.url, headers={"User-Agent": HEADERS.get("User-Agent")}
+            )
             response = compat_urlopen(req)
         except compat_urlerr as e:
-            retVal  =   {"status" : "False", "msg" : "URLError : either your internet connection is not working or server aborted the request"}
+            retVal = {
+                "status": "False",
+                "msg": "URLError : either your internet connection is not working or server aborted the request",
+            }
             return retVal
         except compat_httperr as e:
             if e.code == 401:
-                retVal  =   {"status" : "False", "msg" : "CloudGuru Says (HTTP Error 401 : Unauthorized)"}
+                retVal = {
+                    "status": "False",
+                    "msg": "CloudGuru Says (HTTP Error 401 : Unauthorized)",
+                }
             else:
-                retVal  =   {"status" : "False", "msg" : "HTTPError-{} : direct download link is expired run the CloudGuru-dl with '--skip-sub' option ...".format(e.code)}
+                retVal = {
+                    "status": "False",
+                    "msg": "HTTPError-{} : direct download link is expired run the CloudGuru-dl with '--skip-sub' option ...".format(
+                        e.code
+                    ),
+                }
             return retVal
         else:
             try:
-                total = int(response.info()['Content-Length'].strip())
+                total = int(response.info()["Content-Length"].strip())
             except Exception as e:
-                retVal  =   {"status" : "False", "msg" : "Exception : %s" % (e)}
+                retVal = {"status": "False", "msg": "Exception : %s" % (e)}
                 return retVal
             chunksize, bytesdone, t0 = 16384, 0, time.time()
 
@@ -408,28 +421,44 @@ class CloudGuruLectureStreams(object):
             try:
                 outfh = open(temp_filepath, fmode)
             except Exception as e:
-                if os.name == 'nt':
+                if os.name == "nt":
                     file_length = len(temp_filepath)
                     if file_length > 255:
-                        retVal  =   {"status" : "False", "msg" : "file length is too long to create. try downloading to other drive (e.g :- -o 'E:\\')"}
+                        retVal = {
+                            "status": "False",
+                            "msg": "file length is too long to create. try downloading to other drive (e.g :- -o 'E:\\')",
+                        }
                         return retVal
-                retVal  =   {"status" : "False", "msg" : "Reason : {}".format(e)}
+                retVal = {"status": "False", "msg": "Reason : {}".format(e)}
                 return retVal
 
             if offset:
                 resume_opener = compat_opener()
-                resume_opener.addheaders = [('User-Agent', HEADERS.get('User-Agent')),
-                                            ("Range", "bytes=%s-" % offset)]
+                resume_opener.addheaders = [
+                    ("User-Agent", HEADERS.get("User-Agent")),
+                    ("Range", "bytes=%s-" % offset),
+                ]
                 try:
                     response = resume_opener.open(self.url)
                 except compat_urlerr as e:
-                    retVal  =   {"status" : "False", "msg" : "URLError : either your internet connection is not working or server aborted the request"}
+                    retVal = {
+                        "status": "False",
+                        "msg": "URLError : either your internet connection is not working or server aborted the request",
+                    }
                     return retVal
                 except compat_httperr as e:
                     if e.code == 401:
-                        retVal  =   {"status" : "False", "msg" : "CloudGuru Says (HTTP Error 401 : Unauthorized)"}
+                        retVal = {
+                            "status": "False",
+                            "msg": "CloudGuru Says (HTTP Error 401 : Unauthorized)",
+                        }
                     else:
-                        retVal  =   {"status" : "False", "msg" : "HTTPError-{} : direct download link is expired run the CloudGuru-dl with '--skip-sub' option ...".format(e.code)}
+                        retVal = {
+                            "status": "False",
+                            "msg": "HTTPError-{} : direct download link is expired run the CloudGuru-dl with '--skip-sub' option ...".format(
+                                e.code
+                            ),
+                        }
                     return retVal
                 else:
                     bytesdone = offset
@@ -443,14 +472,17 @@ class CloudGuruLectureStreams(object):
                 if elapsed:
                     try:
                         rate = ((float(bytesdone) - float(offset)) / 1024.0) / elapsed
-                        eta  = (total - bytesdone) / (rate * 1024.0)
+                        eta = (total - bytesdone) / (rate * 1024.0)
                     except ZeroDivisionError as e:
                         outfh.close()
                         try:
                             os.unlink(temp_filepath)
                         except Exception as e:
                             pass
-                        retVal = {"status" : "False", "msg" : "ZeroDivisionError : it seems, lecture has malfunction or is zero byte(s) .."}
+                        retVal = {
+                            "status": "False",
+                            "msg": "ZeroDivisionError : it seems, lecture has malfunction or is zero byte(s) ..",
+                        }
                         return retVal
                 else:
                     rate = 0
@@ -462,7 +494,7 @@ class CloudGuruLectureStreams(object):
                     break
                 if not quiet:
                     status = status_string.format(*progress_stats)
-                    sys.stdout.write("\r" + status + ' ' * 4 + "\r")
+                    sys.stdout.write("\r" + status + " " * 4 + "\r")
                     sys.stdout.flush()
 
                 if callback:
@@ -470,16 +502,15 @@ class CloudGuruLectureStreams(object):
 
             if self._active:
                 os.rename(temp_filepath, filepath)
-                retVal = {"status" : "True", "msg" : "download"}
+                retVal = {"status": "True", "msg": "download"}
             else:
                 outfh.close()
-                retVal = {"status" : "True", "msg" : "download"}
+                retVal = {"status": "True", "msg": "download"}
 
         return retVal
 
 
 class CloudLectureSubtitles(object):
-    
     def __init__(self, parent):
 
         self._mediatype = None
@@ -503,7 +534,7 @@ class CloudLectureSubtitles(object):
     @property
     def id(self):
         return self._parent.id
-    
+
     @property
     def url(self):
         return self._url
@@ -532,7 +563,7 @@ class CloudLectureSubtitles(object):
 
     def download(self, filepath="", quiet=False, callback=lambda *x: None):
         savedir = filename = ""
-        retVal  = {}
+        retVal = {}
 
         if filepath and os.path.isdir(filepath):
             savedir, filename = filepath, self.filename
@@ -546,43 +577,59 @@ class CloudLectureSubtitles(object):
         filepath = os.path.join(savedir, filename)
         if os.name == "nt" and len(filepath) > 250:
             filepath = "\\\\?\\{}".format(filepath)
-        
-        if filepath and filepath.endswith('.vtt'):
-            filepath_vtt2srt = filepath.replace('.vtt', '.srt')
+
+        if filepath and filepath.endswith(".vtt"):
+            filepath_vtt2srt = filepath.replace(".vtt", ".srt")
             if os.path.isfile(filepath_vtt2srt):
-                retVal = {"status" : "True", "msg" : "already downloaded"}
+                retVal = {"status": "True", "msg": "already downloaded"}
                 return retVal
-        
+
         temp_filepath = filepath + ".part"
 
-        status_string = ('  {:,} Bytes [{:.2%}] received. Rate: [{:4.0f} '
-                         'KB/s].  ETA: [{:.0f} secs]')
-
+        status_string = (
+            "  {:,} Bytes [{:.2%}] received. Rate: [{:4.0f} "
+            "KB/s].  ETA: [{:.0f} secs]"
+        )
 
         if early_py_version:
-            status_string = ('  {0:} Bytes [{1:.2%}] received. Rate:'
-                             ' [{2:4.0f} KB/s].  ETA: [{3:.0f} secs]')
+            status_string = (
+                "  {0:} Bytes [{1:.2%}] received. Rate:"
+                " [{2:4.0f} KB/s].  ETA: [{3:.0f} secs]"
+            )
 
-        try:    
-            req = compat_request(self.url, headers={'User-Agent' : HEADERS.get('User-Agent')})
+        try:
+            req = compat_request(
+                self.url, headers={"User-Agent": HEADERS.get("User-Agent")}
+            )
             response = compat_urlopen(req)
         except compat_urlerr as e:
-            retVal  =   {"status" : "False", "msg" : "URLError : either your internet connection is not working or server aborted the request"}
+            retVal = {
+                "status": "False",
+                "msg": "URLError : either your internet connection is not working or server aborted the request",
+            }
             return retVal
         except compat_httperr as e:
             if e.code == 401:
-                retVal  =   {"status" : "False", "msg" : "CloudGuru Says (HTTP Error 401 : Unauthorized)"}
+                retVal = {
+                    "status": "False",
+                    "msg": "CloudGuru Says (HTTP Error 401 : Unauthorized)",
+                }
             else:
-                retVal  =   {"status" : "False", "msg" : "HTTPError-{} : direct download link is expired run the CloudGuru-dl again...".format(e.code)}
+                retVal = {
+                    "status": "False",
+                    "msg": "HTTPError-{} : direct download link is expired run the CloudGuru-dl again...".format(
+                        e.code
+                    ),
+                }
             return retVal
         except Exception as e:
-            retVal  =   {"status" : "False", "msg" : "Exception : %s" % (e)}
+            retVal = {"status": "False", "msg": "Exception : %s" % (e)}
             return retVal
         else:
             try:
-                total = int(response.info()['Content-Length'].strip())
+                total = int(response.info()["Content-Length"].strip())
             except Exception as e:
-                retVal  =   {"status" : "False", "msg" : "Exception : %s" % (e)}
+                retVal = {"status": "False", "msg": "Exception : %s" % (e)}
                 return retVal
             chunksize, bytesdone, t0 = 16384, 0, time.time()
 
@@ -596,31 +643,47 @@ class CloudLectureSubtitles(object):
             try:
                 outfh = open(temp_filepath, fmode)
             except Exception as e:
-                if os.name == 'nt':
+                if os.name == "nt":
                     file_length = len(temp_filepath)
                     if file_length > 255:
-                        retVal  =   {"status" : "False", "msg" : "file length is too long to create. try downloading to other drive (e.g :- -o 'E:\\')"}
+                        retVal = {
+                            "status": "False",
+                            "msg": "file length is too long to create. try downloading to other drive (e.g :- -o 'E:\\')",
+                        }
                         return retVal
-                retVal  =   {"status" : "False", "msg" : "Reason : {}".format(e)}
+                retVal = {"status": "False", "msg": "Reason : {}".format(e)}
                 return retVal
 
             if offset:
                 resume_opener = compat_opener()
-                resume_opener.addheaders = [('User-Agent', HEADERS.get('User-Agent')),
-                                            ("Range", "bytes=%s-" % offset)]
+                resume_opener.addheaders = [
+                    ("User-Agent", HEADERS.get("User-Agent")),
+                    ("Range", "bytes=%s-" % offset),
+                ]
                 try:
                     response = resume_opener.open(self.url)
                 except compat_urlerr as e:
-                    retVal  =   {"status" : "False", "msg" : "URLError : either your internet connection is not working or server aborted the request"}
+                    retVal = {
+                        "status": "False",
+                        "msg": "URLError : either your internet connection is not working or server aborted the request",
+                    }
                     return retVal
                 except compat_httperr as e:
                     if e.code == 401:
-                        retVal  =   {"status" : "False", "msg" : "CloudGuru Says (HTTP Error 401 : Unauthorized)"}
+                        retVal = {
+                            "status": "False",
+                            "msg": "CloudGuru Says (HTTP Error 401 : Unauthorized)",
+                        }
                     else:
-                        retVal  =   {"status" : "False", "msg" : "HTTPError-{} : direct download link is expired run the CloudGuru-dl with '--skip-sub' option ...".format(e.code)}
+                        retVal = {
+                            "status": "False",
+                            "msg": "HTTPError-{} : direct download link is expired run the CloudGuru-dl with '--skip-sub' option ...".format(
+                                e.code
+                            ),
+                        }
                     return retVal
                 except Exception as e:
-                    retVal  =   {"status" : "False", "msg" : "Exception : %s" % (e)}
+                    retVal = {"status": "False", "msg": "Exception : %s" % (e)}
                     return retVal
                 else:
                     bytesdone = offset
@@ -634,14 +697,17 @@ class CloudLectureSubtitles(object):
                 if elapsed:
                     try:
                         rate = ((float(bytesdone) - float(offset)) / 1024.0) / elapsed
-                        eta  = (total - bytesdone) / (rate * 1024.0)
+                        eta = (total - bytesdone) / (rate * 1024.0)
                     except ZeroDivisionError as e:
                         outfh.close()
                         try:
                             os.unlink(temp_filepath)
                         except Exception as e:
                             pass
-                        retVal = {"status" : "False", "msg" : "ZeroDivisionError : it seems, lecture has malfunction or is zero byte(s) .."}
+                        retVal = {
+                            "status": "False",
+                            "msg": "ZeroDivisionError : it seems, lecture has malfunction or is zero byte(s) ..",
+                        }
                         return retVal
                 else:
                     rate = 0
@@ -653,7 +719,7 @@ class CloudLectureSubtitles(object):
                     break
                 if not quiet:
                     status = status_string.format(*progress_stats)
-                    sys.stdout.write("\r" + status + ' ' * 4 + "\r")
+                    sys.stdout.write("\r" + status + " " * 4 + "\r")
                     sys.stdout.flush()
 
                 if callback:
@@ -661,15 +727,15 @@ class CloudLectureSubtitles(object):
 
             if self._active:
                 os.rename(temp_filepath, filepath)
-                retVal = {"status" : "True", "msg" : "download"}
+                retVal = {"status": "True", "msg": "download"}
             else:
                 outfh.close()
-                retVal = {"status" : "True", "msg" : "download"}
+                retVal = {"status": "True", "msg": "download"}
 
         return retVal
 
-class CloudGuruLectureLectureAssets(object):
 
+class CloudGuruLectureLectureAssets(object):
     def __init__(self, parent):
 
         self._extension = None
@@ -695,27 +761,33 @@ class CloudGuruLectureLectureAssets(object):
     def _write_external_links(self, filepath):
         retVal = {}
         filename = filepath
-        if os.name == 'nt':
+        if os.name == "nt":
             # If the absolute path to the file is too long, append the 'magic' prefix
             if len(os.path.abspath(filename)) > 255:
-                filename = u"\\\\?\\%s"%(os.path.abspath(filename))
+                filename = u"\\\\?\\%s" % (os.path.abspath(filename))
         if pyver == 3:
-            with open('{}'.format(filename), 'a', encoding='utf-8') as f:
+            with open("{}".format(filename), "a", encoding="utf-8") as f:
                 try:
-                    f.write('{}\n'.format(self.url))
+                    f.write("{}\n".format(self.url))
                 except Exception as e:
-                    retVal = {'status' : 'False', 'msg' : 'Python3 Exception : {}'.format(e)}
+                    retVal = {
+                        "status": "False",
+                        "msg": "Python3 Exception : {}".format(e),
+                    }
                 else:
-                    retVal = {'status' : 'True', 'msg' : 'download'}
+                    retVal = {"status": "True", "msg": "download"}
             f.close()
         else:
-            with open('{}'.format(filename), 'a') as f:
+            with open("{}".format(filename), "a") as f:
                 try:
-                    f.write('{}\n'.format(self.url))
+                    f.write("{}\n".format(self.url))
                 except Exception as e:
-                    retVal = {'status' : 'False', 'msg' : 'Python2 Exception : {}'.format(e)}
+                    retVal = {
+                        "status": "False",
+                        "msg": "Python2 Exception : {}".format(e),
+                    }
                 else:
-                    retVal = {'status' : 'True', 'msg' : 'download'}
+                    retVal = {"status": "True", "msg": "download"}
             f.close()
         return retVal
 
@@ -733,7 +805,7 @@ class CloudGuruLectureLectureAssets(object):
 
     @property
     def title(self):
-        return self._title#self._parent.title
+        return self._title  # self._parent.title
 
     @property
     def filename(self):
@@ -748,15 +820,21 @@ class CloudGuruLectureLectureAssets(object):
     def get_filesize(self):
         if not self._fsize:
             try:
-                cl = 'content-length'
-                self._fsize = int(requests.get(self.url, stream=True, headers={'User-Agent': HEADERS.get('User-Agent')}).headers[cl])
+                cl = "content-length"
+                self._fsize = int(
+                    requests.get(
+                        self.url,
+                        stream=True,
+                        headers={"User-Agent": HEADERS.get("User-Agent")},
+                    ).headers[cl]
+                )
             except (conn_error, http_error, KeyError) as e:
                 self._fsize = 0
         return self._fsize
 
     def download(self, filepath="", quiet=False, callback=lambda *x: None):
         savedir = filename = ""
-        retVal  = {}
+        retVal = {}
 
         if filepath and os.path.isdir(filepath):
             savedir, filename = filepath, self.filename
@@ -770,44 +848,60 @@ class CloudGuruLectureLectureAssets(object):
         filepath = os.path.join(savedir, filename)
         if os.name == "nt" and len(filepath) > 250:
             filepath = "\\\\?\\{}".format(filepath)
-        
-        if self.mediatype=='external_link':
+
+        if self.mediatype == "external_link":
             return self._write_external_links(filepath)
 
         if os.path.isfile(filepath):
-            retVal = {"status" : "True", "msg" : "already downloaded"}
+            retVal = {"status": "True", "msg": "already downloaded"}
             return retVal
-        
+
         temp_filepath = filepath + ".part"
 
-        status_string = ('  {:,} Bytes [{:.2%}] received. Rate: [{:4.0f} '
-                         'KB/s].  ETA: [{:.0f} secs]')
-
+        status_string = (
+            "  {:,} Bytes [{:.2%}] received. Rate: [{:4.0f} "
+            "KB/s].  ETA: [{:.0f} secs]"
+        )
 
         if early_py_version:
-            status_string = ('  {0:} Bytes [{1:.2%}] received. Rate:'
-                             ' [{2:4.0f} KB/s].  ETA: [{3:.0f} secs]')
+            status_string = (
+                "  {0:} Bytes [{1:.2%}] received. Rate:"
+                " [{2:4.0f} KB/s].  ETA: [{3:.0f} secs]"
+            )
 
-        try:    
-            req = compat_request(self.url, headers={'User-Agent' : HEADERS.get('User-Agent')})
+        try:
+            req = compat_request(
+                self.url, headers={"User-Agent": HEADERS.get("User-Agent")}
+            )
             response = compat_urlopen(req)
         except compat_urlerr as e:
-            retVal  =   {"status" : "False", "msg" : "URLError : either your internet connection is not working or server aborted the request"}
+            retVal = {
+                "status": "False",
+                "msg": "URLError : either your internet connection is not working or server aborted the request",
+            }
             return retVal
         except compat_httperr as e:
             if e.code == 401:
-                retVal  =   {"status" : "False", "msg" : "CloudGuru Says (HTTP Error 401 : Unauthorized)"}
+                retVal = {
+                    "status": "False",
+                    "msg": "CloudGuru Says (HTTP Error 401 : Unauthorized)",
+                }
             else:
-                retVal  =   {"status" : "False", "msg" : "HTTPError-{} : direct download link is expired run the CloudGuru-dl again...".format(e.code)}
+                retVal = {
+                    "status": "False",
+                    "msg": "HTTPError-{} : direct download link is expired run the CloudGuru-dl again...".format(
+                        e.code
+                    ),
+                }
             return retVal
         except Exception as e:
-            retVal  =   {"status" : "False", "msg" : "Exception : %s" % (e)}
+            retVal = {"status": "False", "msg": "Exception : %s" % (e)}
             return retVal
         else:
             try:
-                total = int(response.info()['Content-Length'].strip())
+                total = int(response.info()["Content-Length"].strip())
             except Exception as e:
-                retVal  =   {"status" : "False", "msg" : "Exception : %s" % (e)}
+                retVal = {"status": "False", "msg": "Exception : %s" % (e)}
                 return retVal
             chunksize, bytesdone, t0 = 16384, 0, time.time()
 
@@ -821,31 +915,47 @@ class CloudGuruLectureLectureAssets(object):
             try:
                 outfh = open(temp_filepath, fmode)
             except Exception as e:
-                if os.name == 'nt':
+                if os.name == "nt":
                     file_length = len(temp_filepath)
                     if file_length > 255:
-                        retVal  =   {"status" : "False", "msg" : "file length is too long to create. try downloading to other drive (e.g :- -o 'E:\\')"}
+                        retVal = {
+                            "status": "False",
+                            "msg": "file length is too long to create. try downloading to other drive (e.g :- -o 'E:\\')",
+                        }
                         return retVal
-                retVal  =   {"status" : "False", "msg" : "Reason : {}".format(e)}
+                retVal = {"status": "False", "msg": "Reason : {}".format(e)}
                 return retVal
 
             if offset:
                 resume_opener = compat_opener()
-                resume_opener.addheaders = [('User-Agent', HEADERS.get('User-Agent')),
-                                            ("Range", "bytes=%s-" % offset)]
+                resume_opener.addheaders = [
+                    ("User-Agent", HEADERS.get("User-Agent")),
+                    ("Range", "bytes=%s-" % offset),
+                ]
                 try:
                     response = resume_opener.open(self.url)
                 except compat_urlerr as e:
-                    retVal  =   {"status" : "False", "msg" : "URLError : either your internet connection is not working or server aborted the request"}
+                    retVal = {
+                        "status": "False",
+                        "msg": "URLError : either your internet connection is not working or server aborted the request",
+                    }
                     return retVal
                 except compat_httperr as e:
                     if e.code == 401:
-                        retVal  =   {"status" : "False", "msg" : "CloudGuru Says (HTTP Error 401 : Unauthorized)"}
+                        retVal = {
+                            "status": "False",
+                            "msg": "CloudGuru Says (HTTP Error 401 : Unauthorized)",
+                        }
                     else:
-                        retVal  =   {"status" : "False", "msg" : "HTTPError-{} : direct download link is expired run the CloudGuru-dl with '--skip-sub' option ...".format(e.code)}
+                        retVal = {
+                            "status": "False",
+                            "msg": "HTTPError-{} : direct download link is expired run the CloudGuru-dl with '--skip-sub' option ...".format(
+                                e.code
+                            ),
+                        }
                     return retVal
                 except Exception as e:
-                    retVal  =   {"status" : "False", "msg" : "Exception : %s" % (e)}
+                    retVal = {"status": "False", "msg": "Exception : %s" % (e)}
                     return retVal
                 else:
                     bytesdone = offset
@@ -859,14 +969,17 @@ class CloudGuruLectureLectureAssets(object):
                 if elapsed:
                     try:
                         rate = ((float(bytesdone) - float(offset)) / 1024.0) / elapsed
-                        eta  = (total - bytesdone) / (rate * 1024.0)
+                        eta = (total - bytesdone) / (rate * 1024.0)
                     except ZeroDivisionError as e:
                         outfh.close()
                         try:
                             os.unlink(temp_filepath)
                         except Exception as e:
                             pass
-                        retVal = {"status" : "False", "msg" : "ZeroDivisionError : it seems, lecture has malfunction or is zero byte(s) .."}
+                        retVal = {
+                            "status": "False",
+                            "msg": "ZeroDivisionError : it seems, lecture has malfunction or is zero byte(s) ..",
+                        }
                         return retVal
                 else:
                     rate = 0
@@ -878,7 +991,7 @@ class CloudGuruLectureLectureAssets(object):
                     break
                 if not quiet:
                     status = status_string.format(*progress_stats)
-                    sys.stdout.write("\r" + status + ' ' * 4 + "\r")
+                    sys.stdout.write("\r" + status + " " * 4 + "\r")
                     sys.stdout.flush()
 
                 if callback:
@@ -886,10 +999,9 @@ class CloudGuruLectureLectureAssets(object):
 
             if self._active:
                 os.rename(temp_filepath, filepath)
-                retVal = {"status" : "True", "msg" : "download"}
+                retVal = {"status": "True", "msg": "download"}
             else:
                 outfh.close()
-                retVal = {"status" : "True", "msg" : "download"}
+                retVal = {"status": "True", "msg": "download"}
 
         return retVal
-
