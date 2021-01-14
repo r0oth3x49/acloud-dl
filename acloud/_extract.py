@@ -392,6 +392,7 @@ class CloudGuru(ProgressBar):
                 source_type = entry.get("type").replace("video/", "")
                 url = entry.get("key")
                 bucket = entry.get("bucket")
+                signed_url = entry.get("signedUrl")
                 filesize = entry.get("filesize") or 0
                 query = {"bucket": bucket, "filePath": url}
                 height, width = ret_hw(resolution)
@@ -401,16 +402,18 @@ class CloudGuru(ProgressBar):
                         "type": "video",
                         "extension": source_type,
                         "path": url,
-                        "url": query,
+                        "url": query if not signed_url else signed_url,
                         "height": height,
                         "width": width,
                         "size": filesize,
+                        "signed_url": signed_url,
                     }
                 )
             if not resolution:
                 source_type = entry.get("type").replace("video/", "")
                 url = entry.get("key")
                 bucket = entry.get("bucket")
+                signed_url = entry.get("signedUrl")
                 filesize = entry.get("filesize") or 0
                 query = {"bucket": bucket, "filePath": url}
                 # if acloud does not return the quality/resoltion hard code the height and width
@@ -424,10 +427,11 @@ class CloudGuru(ProgressBar):
                         "type": "video",
                         "extension": source_type,
                         "path": url,
-                        "url": query,
+                        "url": query if not signed_url else signed_url,
                         "height": height,
                         "width": width,
                         "size": filesize,
+                        "signed_url": signed_url,
                     }
                 )
         return _temp
@@ -439,7 +443,11 @@ class CloudGuru(ProgressBar):
         for lecture in lectures:
             sources = [s.get("sources") for s in lecture]
             for entry in sources:
-                query = [e.get("url") for e in entry if e.get("type") != "hls"]
+                query = [
+                    e.get("url")
+                    for e in entry
+                    if e.get("type") != "hls" and isinstance(e.get("url"), dict)
+                ]
                 for queryable in query:
                     _temp.append(queryable)
         if _temp:
@@ -447,93 +455,96 @@ class CloudGuru(ProgressBar):
                 dict(tupleized)
                 for tupleized in set(tuple(item.items()) for item in _temp)
             ]
-        files = {"files": _temp}
+        files = {}
+        if _temp:
+            files = {"files": _temp}
         return files
 
     def _extract_course_information(self, course):
         files = self._fetch_queryable(course=course)
-        GRAPH_QUERY_DOWNLOAD_LINKS.update({"variables": files})
-        query = GRAPH_QUERY_DOWNLOAD_LINKS
-        try:
-            response = self._session._post(PROTECTED_GRAPHQL_URL, query)
-        except conn_error as e:
-            sys.stdout.write(
-                fc
-                + sd
-                + "["
-                + fr
-                + sb
-                + "-"
-                + fc
-                + sd
-                + "] : "
-                + fr
-                + sb
-                + "Connection error : make sure your internet connection is working.\n"
-            )
-            time.sleep(0.8)
-            sys.exit(0)
-        else:
-            data = response.json().get("data")
-            if data:
-                data = data["getRestrictedFiles"].get("urls", [])
-                chapters = course.get("chapters")
-                for chap in chapters:
-                    lectures = chap.get("lectures")
-                    for lec in lectures:
-                        text = (
-                            "\r"
+        if files:
+            GRAPH_QUERY_DOWNLOAD_LINKS.update({"variables": files})
+            query = GRAPH_QUERY_DOWNLOAD_LINKS
+            try:
+                response = self._session._post(PROTECTED_GRAPHQL_URL, query)
+            except conn_error as e:
+                sys.stdout.write(
+                    fc
+                    + sd
+                    + "["
+                    + fr
+                    + sb
+                    + "-"
+                    + fc
+                    + sd
+                    + "] : "
+                    + fr
+                    + sb
+                    + "Connection error : make sure your internet connection is working.\n"
+                )
+                time.sleep(0.8)
+                sys.exit(0)
+            else:
+                data = response.json().get("data")
+                if data:
+                    data = data["getRestrictedFiles"].get("urls", [])
+                    chapters = course.get("chapters")
+                    for chap in chapters:
+                        lectures = chap.get("lectures")
+                        for lec in lectures:
+                            text = (
+                                "\r"
+                                + fc
+                                + sd
+                                + "["
+                                + fm
+                                + sb
+                                + "*"
+                                + fc
+                                + sd
+                                + "] : "
+                                + fg
+                                + sb
+                                + "Downloading course information .. "
+                            )
+                            self._spinner(text)
+                            sources = lec.get("sources")
+                            for entry in sources:
+                                path = entry.get("path")
+                                for url in data:
+                                    if path in url:
+                                        entry.update({"url": url})
+                if not data:
+                    if response.headers.get("x-amzn-ErrorType"):
+                        sys.stdout.write(
+                            fc
+                            + sd
+                            + "["
+                            + fr
+                            + sb
+                            + "-"
                             + fc
+                            + sd
+                            + "] : "
+                            + fr
+                            + sb
+                            + "Authorization error : it seems your authorization token is expired.\n"
+                        )
+                        sys.stdout.write(
+                            fc
                             + sd
                             + "["
                             + fm
                             + sb
-                            + "*"
+                            + "i"
                             + fc
                             + sd
                             + "] : "
                             + fg
                             + sb
-                            + "Downloading course information .. "
+                            + "Login again & copy Request headers for a single request to file..\n"
                         )
-                        self._spinner(text)
-                        sources = lec.get("sources")
-                        for entry in sources:
-                            path = entry.get("path")
-                            for url in data:
-                                if path in url:
-                                    entry.update({"url": url})
-            if not data:
-                if response.headers.get("x-amzn-ErrorType"):
-                    sys.stdout.write(
-                        fc
-                        + sd
-                        + "["
-                        + fr
-                        + sb
-                        + "-"
-                        + fc
-                        + sd
-                        + "] : "
-                        + fr
-                        + sb
-                        + "Authorization error : it seems your authorization token is expired.\n"
-                    )
-                    sys.stdout.write(
-                        fc
-                        + sd
-                        + "["
-                        + fm
-                        + sb
-                        + "i"
-                        + fc
-                        + sd
-                        + "] : "
-                        + fg
-                        + sb
-                        + "Login again & copy Request headers for a single request to file..\n"
-                    )
-                    sys.exit(0)
+                        sys.exit(0)
         return course
 
     def _fetch_hls_streams_by_content_ids(self, content_ids):
@@ -839,5 +850,6 @@ class CloudGuru(ProgressBar):
                     )
                     sys.exit(0)
 
-        # json.dump(acloud, open("course.json", "w"), indent=4)
+        # json.dump(acloud, open("course-test01.json", "w"), indent=4)
+        # exit(0)
         return acloud
