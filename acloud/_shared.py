@@ -85,7 +85,8 @@ class CloudGuruCourseDownload(object):
 
     def get_course(self, keep_alive=True, download_quizzes=False):
         if not self._course:
-            self._process_course(keep_alive=keep_alive, download_quizzes=download_quizzes)
+            self._process_course(keep_alive=keep_alive,
+                                 download_quizzes=download_quizzes)
         return self._course
 
 
@@ -328,9 +329,12 @@ class CloudGuruQuizzes(object):
 
     def write_quiz(self, filepath):
         retVal = {}
+        path = re.sub(r'[/\\:|<>"?*\0-\x1f]|^(AUX|COM[1-9]|CON|LPT[1-9]|NUL|PRN)(?![^.])|^\s|[\s.]$',
+                      "_", self.title[:255], flags=re.IGNORECASE)
+
         filename = "%s\\%s.json" % (
-            filepath, self.title) if os.name == 'nt' else "%s/%s.json" % (filepath,  self.title)
-        
+            filepath, path) if os.name == 'nt' else "%s/%s.json" % (filepath,  self.title)
+
         self._fetch_quiz_content()
 
         data = {
