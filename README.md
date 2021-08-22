@@ -17,6 +17,7 @@
 - Resume capability for a course video.
 - Download subtitle for a lecture.
 - Download all courses without any prompt (option: `-a / --all`).
+- Download quizzes (option: `-z / --quizzes`).
 - List down course contents and video resolution, suggest the best resolution (option: `-i / --info`).
 - Download lecture(s) requested resolution (option: `-q / --quality`).
 - Download course to user requested path (option: `-o / --output`).
@@ -78,6 +79,10 @@ You can download the latest version of acloud-dl by cloning the GitHub repositor
 
     python acloud-dl.py -c file_containing_cookie.txt -a
 
+***Download quizzes***
+
+    python acloud-dl.py -c file_containing_cookie.txt -z
+
 ***Download courses by providing range to start from***
 
     python acloud-dl.py -c file_containing_cookie.txt
@@ -128,6 +133,7 @@ Advance:
   -q , --quality   Download specific video quality.
   -i, --info       List all lectures with available resolution.
   -a, --all        Download all courses without any prompt (default: false).
+  -z, --quizzes    Download quizzes. WARNING: this will fill your attempt history (default: false).
 
 Example:
   python acloud-dl.py -c cookies.txt

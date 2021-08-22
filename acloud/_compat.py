@@ -47,7 +47,8 @@ from requests.exceptions import HTTPError as http_error
 encoding, pyver = str, 3
 NO_DEFAULT = object()
 
-PUBLIC_GRAPHQL_URL = "https://prod-api.acloud.guru/bff/graphql"  # 'https://prod-api.acloud.guru/bff/graphql/public'
+# 'https://prod-api.acloud.guru/bff/graphql/public'
+PUBLIC_GRAPHQL_URL = "https://prod-api.acloud.guru/bff/graphql"
 PROTECTED_GRAPHQL_URL = "https://prod-api.acloud.guru/bff/graphql/protected"
 
 # queries ..
@@ -75,10 +76,106 @@ GRAPH_QUERY_SUBTITLE_LINKS = {
     "variables": {"contentIds": []},
 }
 
+GRAPH_QUERY_QUIZ_OVERVIEW = {
+    "query": """
+            query Assessments_assessment($id: String) {
+                Assessments_assessment(id: $id) {
+                    id
+                    title
+                    description
+                    numberOfQuestions
+                    skillLevel
+                    __typename
+                }
+                Assessments_attemptHistory(id: $id) {
+                    id
+                    status
+                    grade {
+                        score
+                        __typename
+                    }
+                    createdDate
+                    __typename
+                }
+            }
+    """,
+    "variables": {"id": ""},
+}
+
+GRAPH_QUERY_QUIZ_CONTENT = {
+    "query": """
+            mutation Assessments_createAttempt($input: Assessments_CreateAttemptInput!) {
+                Assessments_createAttempt(input: $input) {
+                    ... on Assessments_Attempt {
+                        id
+                        title
+                        description
+                        numberOfQuestions
+                        skillLevel
+                        questions {
+                            id
+                            questionId
+                            questionText
+                            type
+                            possibleCorrect
+                            choices {
+                                id
+                                text
+                                __typename
+                            }
+                            __typename
+                        }
+                        __typename
+                    }
+                    __typename
+                }
+            }
+    """,
+    "variables": {"input": {"assessmentId": ""}},
+}
+
+GRAPH_QUERY_QUIZ_ANSWER = {
+    "operationName": "Assessments_submitChoices",
+    "query": """
+            mutation Assessments_submitChoices($input: Assessments_SubmitChoicesInput!) {
+                Assessments_submitChoices(input: $input) {
+                    ... on Assessments_QuestionResults {
+                        isCorrect
+                        correctAnswers {
+                            id
+                            questionId
+                            text
+                            explanation
+                            correctAnswer
+                            __typename
+                        }
+                        incorrectSelectedAnswers {
+                            id
+                            questionId
+                            text
+                            explanation
+                            correctAnswer
+                            __typename
+                        }
+                        __typename
+                    }
+                    __typename
+                }
+            }
+    """,
+    "variables": {
+        "input": {
+            "attemptId": "",
+            "questionId": "",
+            "selectedChoiceIds": []
+        }
+    },
+}
+
 GRAPH_QUERY_UseHasCourseAccess = {
     "operationName": "UseHasCourseAccess",
     "variables": {},
-    "query": "query UseHasCourseAccess {\n  userAccessibleCourses(courseIds: []) {\n    id\n  title\n  __typename\n  }\n}\n",
+    "query": "query UseHasCourseAccess {  userAccessibleCourses(courseIds: []) { id  title  __typename  }}",
 }
 
 HEADERS = {
@@ -115,6 +212,9 @@ __ALL__ = [
     "PROTECTED_GRAPHQL_URL",
     "GRAPH_QUERY_COURSES",
     "GRAPH_QUERY_COURSE_INFO",
+    "GRAPH_QUERY_QUIZ_CONTENT",
+    "GRAPH_QUERY_QUIZ_ANSWER",
+    "GRAPH_QUERY_QUIZ_OVERVIEW",
     "GRAPH_QUERY_DOWNLOAD_LINKS",
     "GRAPH_QUERY_SUBTITLE_LINKS",
     "GRAPH_QUERY_UseHasCourseAccess",

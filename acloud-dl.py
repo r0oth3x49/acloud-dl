@@ -26,7 +26,7 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
         self.cookies = cookies
         super(CloudGuru, self).__init__()
 
-    def course_list_down(self, download_all=False):
+    def course_list_down(self, download_all=False, download_quizzes=False):
         sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading accessible courses information .. \r")
         courses = acloud.courses(cookies=self.cookies)
         if not download_all:
@@ -56,7 +56,7 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
             course_name = course.title
             sys.stdout.write ("\n" + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Course " + fb + sb + "'%s'.\n" % (course_name))
             sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading course information .. \r")
-            course = course.get_course(keep_alive=download_all)
+            course = course.get_course(keep_alive=download_all, download_quizzes=download_quizzes)
             sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloaded course information .. (done)\r\n")
             chapters = course.get_chapters()
             total_lectures = course.lectures
@@ -69,8 +69,13 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
                 chapter_title = chapter.title
                 lectures = chapter.get_lectures()
                 lectures_count = chapter.lectures
+                
+                quizzes_count = chapter.quizzes
+
                 sys.stdout.write ('\n' + fc + sd + "[" + fw + sb + "+" + fc + sd + "] : " + fw + sd + "Chapter (%s)\n" % (chapter_title))
+                sys.stdout.write (fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Quiz(zes) (%s).\n" % (quizzes_count))
                 sys.stdout.write (fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Lecture(s) (%s).\n" % (lectures_count))
+
                 for lecture in lectures:
                     lecture_id = lecture.id
                     lecture_index = lecture.index
@@ -177,7 +182,7 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
         if lecture_subs:
             self.download_subtitles(subtitle=lecture_subs, filepath=filepath)
 
-    def course_download(self, path='', quality='', download_all=False):
+    def course_download(self, path='', quality='', download_all=False, download_quizzes=False):
         sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading accessible courses information .. \r")
         courses = acloud.courses(cookies=self.cookies)
         if not download_all:
@@ -206,7 +211,7 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
             course_name = course.title
             sys.stdout.write ("\n" + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Course " + fb + sb + "'%s'.\n" % (course_name))
             sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading course information .. \r")
-            course = course.get_course(keep_alive=download_all)
+            course = course.get_course(keep_alive=download_all, download_quizzes=download_quizzes)
             sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloaded course information .. (done)\r\n")
             chapters = course.get_chapters()
             total_lectures = course.lectures
@@ -223,13 +228,23 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
             for chapter in chapters:
               chapter_index = chapter.index
               chapter_title = chapter.title
+              
               lectures = chapter.get_lectures()
               lectures_count = chapter.lectures
+            
+              quizzes = chapter.get_quizzes()
+              quizzes_count = chapter.quizzes
+
               filepath = "%s\\%s" % (course_path, chapter_title) if os.name == 'nt' else "%s/%s" % (course_path, chapter_title)
               _ = course.create_chapter(filepath=filepath)
               sys.stdout.write (fc + sd + "\n[" + fm + sb + "*" + fc + sd + "] : " + fm + sb + "Downloading chapter : ({index} of {total})\n".format(index=chapter_index, total=total_chapters))
               sys.stdout.write (fc + sd + "[" + fw + sb + "+" + fc + sd + "] : " + fw + sd + "Chapter (%s)\n" % (chapter_title))
               sys.stdout.write (fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Found (%s) lectures ...\n" % (lectures_count))
+              sys.stdout.write (fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Found (%s) quizzes ...\n" % (quizzes_count))
+
+              for quiz in quizzes:
+                  quiz.write_quiz(filepath)
+
               for lecture in lectures:
                   lecture_index = lecture.index
                   lecture_title = lecture.title
@@ -284,6 +299,11 @@ def main():
         dest='download_all',\
         action='store_true',\
         help="Download all courses without any prompt (default: false).")
+    advance.add_argument(
+        '-z', '--quizzes',\
+        dest='download_quizzes',\
+        action='store_true',\
+        help="Download quizzes. WARNING: this will fill your attempt history (default: false).")
 
     options = parser.parse_args()
 
@@ -301,10 +321,10 @@ def main():
             acloud = CloudGuru(cookies=cookies)
 
             if options.info:
-                acloud.course_list_down()
+                acloud.course_list_down(download_quizzes=options.download_quizzes)
 
             if not options.info:
-                acloud.course_download(path=options.output, quality=options.quality, download_all=options.download_all)
+                acloud.course_download(path=options.output, quality=options.quality, download_all=options.download_all, download_quizzes=options.download_quizzes)
 
         else:
             sys.stdout.write('\n' + fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "file containing request headers is required.\n")
@@ -319,10 +339,10 @@ def main():
             acloud = CloudGuru(cookies=cookies)
 
             if options.info:
-                acloud.course_list_down()
+                acloud.course_list_down(download_quizzes=options.download_quizzes)
 
             if not options.info:
-                acloud.course_download(path=options.output, quality=options.quality, download_all=options.download_all)
+                acloud.course_download(path=options.output, quality=options.quality, download_all=options.download_all, download_quizzes=options.download_quizzes)
         else:
             sys.stdout.write('\n' + fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "unable to find file '%s'.\n" % (options.cookies))
             sys.exit(0)

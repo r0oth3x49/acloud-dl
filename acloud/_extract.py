@@ -41,6 +41,9 @@ from ._compat import (
     PROTECTED_GRAPHQL_URL,
     GRAPH_QUERY_COURSES,
     GRAPH_QUERY_COURSE_INFO,
+    GRAPH_QUERY_QUIZ_OVERVIEW,
+    GRAPH_QUERY_QUIZ_ANSWER,
+    GRAPH_QUERY_QUIZ_CONTENT,
     GRAPH_QUERY_DOWNLOAD_LINKS,
     GRAPH_QUERY_SUBTITLE_LINKS,
     GRAPH_QUERY_UseHasCourseAccess,
@@ -64,7 +67,8 @@ class CloudGuru(ProgressBar):
         return text
 
     def _sanitize(self, unsafetext):
-        text = slugify(unsafetext, lower=False, spaces=True, ok=SLUG_OK + "()._-")
+        text = slugify(unsafetext, lower=False,
+                       spaces=True, ok=SLUG_OK + "()._-")
         return self._clean(text)
 
     def _extract_cookie_string(self, raw_cookies):
@@ -639,12 +643,14 @@ class CloudGuru(ProgressBar):
             sys.exit(0)
         else:
             data = response.json()
-            subtitles = data.get("data", {}).get("subtitleTranscription", [])
-            if subtitles:
-                for entry in subtitles:
-                    _id = entry.get("id")
-                    url = entry.get("subtitleUrl")
-                    _temp.append({"subtitle_id": _id, "url": url})
+            if data:
+                subtitles = data.get("data", {}).get(
+                    "subtitleTranscription", [])
+                if subtitles:
+                    for entry in subtitles:
+                        _id = entry.get("id")
+                        url = entry.get("subtitleUrl")
+                        _temp.append({"subtitle_id": _id, "url": url})
         return _temp
 
     def _extract_sub_id(self, videoposter):
@@ -660,20 +666,45 @@ class CloudGuru(ProgressBar):
         return _id
 
     def _extract_lectures(self, lectures):
-        _temp = []
+        video_temp = []
+        quiz_temp = []
         contentid_list = []
         sub_ids = []
         for entry in lectures:
             lecture_title = self._sanitize(entry.get("title"))
             lecture_index = int(entry.get("sequence")) + 1
             lecture_id = entry.get("id")
-            content_type = entry["content"].get("type")
+            content_type = entry.get("content", {}).get("type")
             lecture = "{0:03d} {1!s}".format(lecture_index, lecture_title)
             assets = entry.get("resources")
             assets = self._extract_assets(assets)
-            duration = entry["content"].get("duration")
-            extension = entry["content"].get("type")
-            if content_type == "video":
+            duration = entry.get("content", {}).get("duration")
+            extension = entry.get("content", {}).get("type")
+            if content_type == "quiz":
+                # json.dump(entry, open("dumps/lecture_quiz {}.json".format(lecture_id), "w"), indent=4)
+
+                quiz_id = entry.get("content", {}).get("quizId")
+                quiz_overview = self._extract_quiz_overview(quiz_id)
+
+                quiz_title = quiz_overview.get("title") or entry.get(
+                    "content", {}).get("name") or entry.get("title")
+                quiz_description = quiz_overview.get(
+                    "description") or entry.get("description")
+                number_of_questions = quiz_overview.get("number_of_questions")
+                skill_level = quiz_overview.get("skill_level")
+                duration = entry.get("content", {}).get("duration")
+
+                quiz_temp.append(
+                    {
+                        "quiz_id": quiz_id,
+                        "quiz_title": quiz_title,
+                        "quiz_description": quiz_description,
+                        "quiz_number_of_questions": number_of_questions,
+                        "quiz_skill_level": skill_level,
+                        "quiz_duration": duration,
+                    }
+                )
+            elif content_type == "video":
                 videoposter = entry["content"].get("videoposter", "")
                 content_id = entry["content"].get("contentId")
                 sub_id = self._extract_sub_id(videoposter)
@@ -683,7 +714,7 @@ class CloudGuru(ProgressBar):
                     sub_ids.append(content_id)
                 if content_id:
                     contentid_list.append(content_id)
-                    _temp.append(
+                    video_temp.append(
                         {
                             "lecture_title": lecture,
                             "lecture_id": content_id,
@@ -703,8 +734,8 @@ class CloudGuru(ProgressBar):
                 if not sources:
                     continue
                 sources = self._extract_sources(sources)
-                if lecture not in _temp:
-                    _temp.append(
+                if lecture not in video_temp:
+                    video_temp.append(
                         {
                             "lecture_title": lecture,
                             "lecture_id": lecture_id,
@@ -721,7 +752,7 @@ class CloudGuru(ProgressBar):
                     )
         if contentid_list:
             streams = self._fetch_hls_streams_by_content_ids(contentid_list)
-            for i in _temp:
+            for i in video_temp:
                 _id = i.get("lecture_id")
                 text = (
                     "\r"
@@ -748,11 +779,11 @@ class CloudGuru(ProgressBar):
         if sub_ids:
             sub_ids = list(set(sub_ids))
             subtitles = self._extract_subtitle(sub_ids)
-            for i in _temp:
+            for i in video_temp:
                 for s in subtitles:
                     if i.get("subtitle_id") == s.get("subtitle_id"):
                         i.update({"subtitle_url": s.get("url")})
-        return _temp
+        return video_temp, quiz_temp
 
     def _real_extract(self, course_id):
 
@@ -782,22 +813,25 @@ class CloudGuru(ProgressBar):
             sys.exit(0)
         else:
             course = response.json().get("data")
-            # json.dump(course, open("course.json", "w"), indent=4)
             if course:
+
                 course = course["courseOverviews"][0]
                 course_url = course.get("url")
                 course_title = self._sanitize(course.get("title"))
-                course_id = course.get("uniqueid")
                 chapters = course.get("sections")
+                course_id = course.get("uniqueid")
 
                 acloud["course_id"] = course_id
                 acloud["course_url"] = course_url
                 acloud["course_title"] = course_title
                 acloud["total_chapters"] = len(chapters)
                 acloud["total_lectures"] = sum(
-                    [len(chapter.get("components", [])) for chapter in chapters]
+                    [len(chapter.get("components", []))
+                     for chapter in chapters]
                 )
                 acloud["chapters"] = []
+
+                # json.dump(course, open("dumps/course {}.json".format(course_title), "w"), indent=4)
 
                 for entry in chapters:
                     chapter_title = self._sanitize(entry.get("title"))
@@ -806,15 +840,24 @@ class CloudGuru(ProgressBar):
                     chapter_index = int(entry.get("sequence")) + 1
                     lectures_count = len(entry.get("components"))
                     lectures = entry.get("components")
-                    chapter = "{0:02d} {1!s}".format(chapter_index, chapter_title)
+                    chapter = "{0:02d} {1!s}".format(
+                        chapter_index, chapter_title)
+                    lectures, quizzes = self._extract_lectures(lectures)
+                    quizzes_count = len(quizzes)
+
+                    # if len(quizzes) > 0:
+                    # json.dump(quizzes, open("dumps/quizzes {}.json".format(chapter_title), "w"), indent=4)
+
                     acloud["chapters"].append(
                         {
                             "chapter_title": chapter,
                             "chapter_id": chapter_id,
                             "chapter_index": chapter_index,
                             "lectures_count": lectures_count,
+                            "quizzes_count": quizzes_count,
                             "chapter_url": chapter_url,
-                            "lectures": self._extract_lectures(lectures),
+                            "lectures": lectures,
+                            "quizzes": quizzes,
                         }
                     )
                 acloud = self._extract_course_information(acloud)
@@ -850,6 +893,168 @@ class CloudGuru(ProgressBar):
                     )
                     sys.exit(0)
 
-        # json.dump(acloud, open("course-test01.json", "w"), indent=4)
+        # json.dump(acloud, open("dumps/course-test01.json", "w"), indent=4)
         # exit(0)
         return acloud
+
+    def _extract_quiz_overview(self, id):
+        quiz_overview = {}
+
+        GRAPH_QUERY_QUIZ_OVERVIEW["variables"].update({"id": id})
+        query = GRAPH_QUERY_QUIZ_OVERVIEW
+
+        try:
+            response = self._session._post(PROTECTED_GRAPHQL_URL, query)
+        except conn_error as e:
+            sys.stdout.write(
+                fc
+                + sd
+                + "["
+                + fr
+                + sb
+                + "-"
+                + fc
+                + sd
+                + "] : "
+                + fr
+                + sb
+                + "Connection error : make sure your internet connection is working.\n"
+            )
+            time.sleep(0.8)
+            sys.exit(0)
+        else:
+            data = response.json().get("data")
+
+            if data:
+                assessment = data.get("Assessments_assessment")
+
+                # id = assessment.get("id")
+                # json.dump(data, open("dumps/quiz_overview {}.json".format(id), "w"), indent=4)
+
+                quiz_overview = {
+                    "title": assessment.get("title"),
+                    "description": assessment.get("description"),
+                    "number_of_questions": assessment.get("numberOfQuestions"),
+                    "skill_level": assessment.get("skillLevel")
+                }
+
+        return quiz_overview
+
+    def _extract_quiz_content(self, id):
+        content = []
+
+        GRAPH_QUERY_QUIZ_CONTENT["variables"]["input"].update(
+            {"assessmentId": id})
+        query = GRAPH_QUERY_QUIZ_CONTENT
+
+        try:
+            response = self._session._post(PROTECTED_GRAPHQL_URL, query)
+        except conn_error as e:
+            sys.stdout.write(
+                fc
+                + sd
+                + "["
+                + fr
+                + sb
+                + "-"
+                + fc
+                + sd
+                + "] : "
+                + fr
+                + sb
+                + "Connection error : make sure your internet connection is working.\n"
+            )
+            time.sleep(0.8)
+            sys.exit(0)
+        else:
+            data = response.json().get("data")
+            if data:
+                attempt_id = data.get(
+                    "Assessments_createAttempt", {}).get("id")
+                questions = data.get(
+                    "Assessments_createAttempt", {}).get("questions")
+
+                for question in questions:
+                    answers = []
+
+                    question_id = question.get("id")
+                    choices = question.get("choices")
+
+                    for choice in choices:
+                        _answers = self._extract_question_answer(
+                            attempt_id, question_id, choice.get("id"))
+                        for answer in _answers:
+                            if answer not in answers:
+                                answers.append(answer)
+
+                    question = {
+                        # "question_id": question.get("questionId"),
+                        "question_text": question.get("questionText"),
+                        "question_type": question.get("type"),
+                        "question_answers": answers,
+                    }
+                    content.append(question)
+
+                # json.dump(content, open(
+                #     "dumps/quiz_content {}.json".format(id), "w"), indent=4)
+
+        return content
+
+    def _extract_question_answer(self, attempt_id, question_id, choice_id):
+        answers = []
+
+        GRAPH_QUERY_QUIZ_ANSWER["variables"]["input"].update(
+            {"questionId": question_id, "attemptId": attempt_id, "selectedChoiceIds": [choice_id]})
+
+        query = GRAPH_QUERY_QUIZ_ANSWER
+
+        try:
+            response = self._session._post(PROTECTED_GRAPHQL_URL, query)
+        except conn_error as e:
+            sys.stdout.write(
+                fc
+                + sd
+                + "["
+                + fr
+                + sb
+                + "-"
+                + fc
+                + sd
+                + "] : "
+                + fr
+                + sb
+                + "Connection error : make sure your internet connection is working.\n"
+            )
+            time.sleep(0.8)
+            sys.exit(0)
+        else:
+            data = response.json().get("data")
+
+            if data:
+                correct_answers = data.get(
+                    "Assessments_submitChoices", {}).get("correctAnswers")
+                incorrect_answers = data.get(
+                    "Assessments_submitChoices", {}).get("incorrectSelectedAnswers")
+
+                if correct_answers:
+                    for correct_answer in correct_answers:
+                        answer = {
+                            "answer_text": correct_answer.get("text"),
+                            "answer_explanation": correct_answer.get("explanation"),
+                            "answer_is_correct": correct_answer.get("correctAnswer")
+                        }
+                        answers.append(answer)
+
+                if incorrect_answers:
+                    for incorrect_answer in incorrect_answers:
+                        answer = {
+                            "answer_text": incorrect_answer.get("text"),
+                            "answer_explanation": incorrect_answer.get("explanation"),
+                            "answer_is_correct": incorrect_answer.get("correctAnswer")
+                        }
+                        answers.append(answer)
+
+                # json.dump(data, open(
+                #     "dumps/quiz_answer {}.json".format(attempt_id), "w"), indent=4)
+
+        return answers

@@ -96,3 +96,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+dumps/**
+!dumps/.gitkeep

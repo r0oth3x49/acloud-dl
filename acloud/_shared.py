@@ -22,6 +22,8 @@ THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
 
+import json
+import inspect
 from ._compat import (
     re,
     os,
@@ -81,9 +83,9 @@ class CloudGuruCourseDownload(object):
     def title(self):
         return self._title
 
-    def get_course(self, keep_alive=True):
+    def get_course(self, keep_alive=True, download_quizzes=False):
         if not self._course:
-            self._process_course(keep_alive=keep_alive)
+            self._process_course(keep_alive=keep_alive, download_quizzes=download_quizzes)
         return self._course
 
 
@@ -159,8 +161,10 @@ class CloudGuruChapters(object):
         self._chapter_index = None
         self._chapter_title = None
         self._lectures_count = 0
+        self._quizzes_count = 0
 
         self._lectures = []
+        self._quizzes = []
 
     def __repr__(self):
         chapter = "{title}".format(title=self.title)
@@ -182,8 +186,15 @@ class CloudGuruChapters(object):
     def lectures(self):
         return self._lectures_count
 
+    @property
+    def quizzes(self):
+        return self._quizzes_count
+
     def get_lectures(self):
         return self._lectures
+
+    def get_quizzes(self):
+        return self._quizzes
 
 
 class CloudGuruLectures(object):
@@ -271,6 +282,96 @@ class CloudGuruLectures(object):
                     break
                 index += 1
         return best
+
+
+class CloudGuruQuizzes(object):
+    def __init__(self):
+
+        self._quiz_id = None
+        self._quiz_title = None
+        self._quiz_description = None
+        self._quiz_number_of_questions = None
+        self._quiz_skill_level = None
+        self._quiz_duration = None
+        self._quiz_content = None
+
+    def __repr__(self):
+        return self.title
+
+    @property
+    def id(self):
+        return self._quiz_id
+
+    @property
+    def title(self):
+        return self._quiz_title
+
+    @property
+    def description(self):
+        return self._quiz_description
+
+    @property
+    def number_of_questions(self):
+        return self._quiz_number_of_questions
+
+    @property
+    def skill_level(self):
+        return self._quiz_skill_level
+
+    @property
+    def duration(self):
+        return self._quiz_duration
+
+    @property
+    def content(self):
+        return self._quiz_content
+
+    def write_quiz(self, filepath):
+        retVal = {}
+        filename = "%s\\%s.json" % (
+            filepath, self.title) if os.name == 'nt' else "%s/%s.json" % (filepath,  self.title)
+        
+        self._fetch_quiz_content()
+
+        data = {
+            # "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "number_of_questions": self.number_of_questions,
+            "skill_level": self.skill_level,
+            "duration": self.duration,
+            "content": self.content,
+        }
+
+        if os.name == "nt":
+            # If the absolute path to the file is too long, append the 'magic' prefix
+            if len(os.path.abspath(filename)) > 255:
+                filename = u"\\\\?\\%s" % (os.path.abspath(filename))
+        if pyver == 3:
+            with open("{}".format(filename), "w", encoding="utf-8") as f:
+                try:
+                    json.dump(data, f, indent=4)
+                except Exception as e:
+                    retVal = {
+                        "status": "False",
+                        "msg": "Python3 Exception : {}".format(e),
+                    }
+                else:
+                    retVal = {"status": "True", "msg": ""}
+            f.close()
+        else:
+            with open("{}".format(filename), "w") as f:
+                try:
+                    json.dump(data, f, indent=4)
+                except Exception as e:
+                    retVal = {
+                        "status": "False",
+                        "msg": "Python2 Exception : {}".format(e),
+                    }
+                else:
+                    retVal = {"status": "True", "msg": ""}
+            f.close()
+        return retVal
 
 
 class CloudGuruLectureStreams(object):
@@ -471,7 +572,8 @@ class CloudGuruLectureStreams(object):
                 bytesdone += len(chunk)
                 if elapsed:
                     try:
-                        rate = ((float(bytesdone) - float(offset)) / 1024.0) / elapsed
+                        rate = ((float(bytesdone) - float(offset)) /
+                                1024.0) / elapsed
                         eta = (total - bytesdone) / (rate * 1024.0)
                     except ZeroDivisionError as e:
                         outfh.close()
@@ -487,7 +589,8 @@ class CloudGuruLectureStreams(object):
                 else:
                     rate = 0
                     eta = 0
-                progress_stats = (bytesdone, bytesdone * 1.0 / total, rate, eta)
+                progress_stats = (bytesdone, bytesdone *
+                                  1.0 / total, rate, eta)
 
                 if not chunk:
                     outfh.close()
@@ -696,7 +799,8 @@ class CloudLectureSubtitles(object):
                 bytesdone += len(chunk)
                 if elapsed:
                     try:
-                        rate = ((float(bytesdone) - float(offset)) / 1024.0) / elapsed
+                        rate = ((float(bytesdone) - float(offset)) /
+                                1024.0) / elapsed
                         eta = (total - bytesdone) / (rate * 1024.0)
                     except ZeroDivisionError as e:
                         outfh.close()
@@ -712,7 +816,8 @@ class CloudLectureSubtitles(object):
                 else:
                     rate = 0
                     eta = 0
-                progress_stats = (bytesdone, bytesdone * 1.0 / total, rate, eta)
+                progress_stats = (bytesdone, bytesdone *
+                                  1.0 / total, rate, eta)
 
                 if not chunk:
                     outfh.close()
@@ -968,7 +1073,8 @@ class CloudGuruLectureLectureAssets(object):
                 bytesdone += len(chunk)
                 if elapsed:
                     try:
-                        rate = ((float(bytesdone) - float(offset)) / 1024.0) / elapsed
+                        rate = ((float(bytesdone) - float(offset)) /
+                                1024.0) / elapsed
                         eta = (total - bytesdone) / (rate * 1024.0)
                     except ZeroDivisionError as e:
                         outfh.close()
@@ -984,7 +1090,8 @@ class CloudGuruLectureLectureAssets(object):
                 else:
                     rate = 0
                     eta = 0
-                progress_stats = (bytesdone, bytesdone * 1.0 / total, rate, eta)
+                progress_stats = (bytesdone, bytesdone *
+                                  1.0 / total, rate, eta)
 
                 if not chunk:
                     outfh.close()

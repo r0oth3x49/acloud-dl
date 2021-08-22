@@ -34,6 +34,7 @@ from ._shared import (
     CloudGuruCourse,
     CloudGuruChapters,
     CloudGuruLectures,
+    CloudGuruQuizzes,
     CloudLectureSubtitles,
     CloudGuruLectureStreams,
     CloudGuruLectureLectureAssets,
@@ -53,7 +54,8 @@ class InternCloudGuruCourses(CloudGuruCourses, CloudGuru, GetPass):
             auth = self._login(cookies=self._cookies)
         if auth.get("login") == "successful":
             courses = self._extract_accessible_courses()
-            self._courses = [InternCloudGuruCourseDownload(c, self) for c in courses]
+            self._courses = [InternCloudGuruCourseDownload(
+                c, self) for c in courses]
             self._have_basic_courses = True
 
 
@@ -65,16 +67,18 @@ class InternCloudGuruCourseDownload(CloudGuruCourseDownload):
         self._id = self._info.get("uniqueid") or self._info.get("id")
         self._title = self._info.get("title")
 
-    def _process_course(self, keep_alive):
-        self._course = InternCloudGuruCourse(self._info, self._session, keep_alive)
+    def _process_course(self, keep_alive, download_quizzes):
+        self._course = InternCloudGuruCourse(
+            self._info, self._session, keep_alive, download_quizzes)
 
 
 class InternCloudGuruCourse(CloudGuruCourse, CloudGuru):
-    def __init__(self, course, session, keep_alive):
+    def __init__(self, course, session, keep_alive, download_quizzes):
         self._info = ""
         self._course = course
         self._session = session
         self._keep_alive = keep_alive
+        self._download_quizzes = download_quizzes
         super(InternCloudGuruCourse, self).__init__()
 
     def _fetch_course(self):
@@ -87,21 +91,28 @@ class InternCloudGuruCourse(CloudGuruCourse, CloudGuru):
         self._title = self._info["course_title"]
         self._chapters_count = self._info["total_chapters"]
         self._total_lectures = self._info["total_lectures"]
-        self._chapters = [InternCloudGuruChapter(z) for z in self._info["chapters"]]
+        self._chapters = [InternCloudGuruChapter(
+            z, self._session, self._download_quizzes) for z in self._info["chapters"]]
         if not self._keep_alive:
             self._logout()
         self._have_basic = True
 
 
 class InternCloudGuruChapter(CloudGuruChapters):
-    def __init__(self, chapter):
+    def __init__(self, chapter, session, download_quizzes):
         super(InternCloudGuruChapter, self).__init__()
-
+        self._session = session
+        self._download_quizzes = download_quizzes
         self._chapter_id = chapter["chapter_id"]
         self._chapter_title = chapter["chapter_title"]
         self._chapter_index = chapter["chapter_index"]
         self._lectures_count = chapter["lectures_count"]
-        self._lectures = [InternCloudGuruLecture(z) for z in chapter["lectures"]]
+        self._quizzes_count = chapter["quizzes_count"]
+        self._lectures = [InternCloudGuruLecture(
+            z) for z in chapter["lectures"]]
+        if self._download_quizzes:
+            self._quizzes = [InternCloudGuruQuiz(
+                z, self._session) for z in chapter["quizzes"]]
 
 
 class InternCloudGuruLecture(CloudGuruLectures):
@@ -128,7 +139,8 @@ class InternCloudGuruLecture(CloudGuruLectures):
 
     def _process_streams(self):
         streams = (
-            [InternCloudGuruLectureStream(z, self) for z in self._info["sources"]]
+            [InternCloudGuruLectureStream(z, self)
+             for z in self._info["sources"]]
             if self._sources_count > 0
             else []
         )
@@ -136,7 +148,8 @@ class InternCloudGuruLecture(CloudGuruLectures):
 
     def _process_assets(self):
         assets = (
-            [InternCloudGuruLectureAssets(z, self) for z in self._info["assets"]]
+            [InternCloudGuruLectureAssets(z, self)
+             for z in self._info["assets"]]
             if self._assets_count > 0
             else []
         )
@@ -149,6 +162,24 @@ class InternCloudGuruLecture(CloudGuruLectures):
             else ""
         )
         self._subtitle = subtitles
+
+
+class InternCloudGuruQuiz(CloudGuruQuizzes, CloudGuru):
+    def __init__(self, quiz, session):
+        super(InternCloudGuruQuiz, self).__init__()
+        self._info = quiz
+        self._session = session
+
+        self._quiz_id = self._info.get("quiz_id")
+        self._quiz_title = self._info.get("quiz_title")
+        self._quiz_description = self._info.get("quiz_description")
+        self._quiz_number_of_questions = self._info.get(
+            "quiz_number_of_questions")
+        self._quiz_skill_level = self._info.get("quiz_skill_level")
+        self._quiz_duration = self._info.get("quiz_duration")
+
+    def _fetch_quiz_content(self):
+        self._quiz_content = self._extract_quiz_content(self._quiz_id)
 
 
 class InternCloudGuruLectureStream(CloudGuruLectureStreams):
@@ -173,7 +204,8 @@ class InternCloudGuruLectureAssets(CloudGuruLectureLectureAssets):
 
         self._mediatype = assets.get("type")
         self._extension = assets.get("extension")
-        self._title = "{0:03d} ".format(parent._lecture_index) + assets.get("filename")
+        self._title = "{0:03d} ".format(
+            parent._lecture_index) + assets.get("filename")
         self._url = assets.get("url")
 
 
