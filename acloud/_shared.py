@@ -333,7 +333,7 @@ class CloudGuruQuizzes(object):
                       "_", self.title[:255], flags=re.IGNORECASE)
 
         filename = "%s\\%s.json" % (
-            filepath, path) if os.name == 'nt' else "%s/%s.json" % (filepath,  self.title)
+            filepath, path) if os.name == 'nt' else "%s/%s.json" % (filepath,  path)
 
         self._fetch_quiz_content()
 
