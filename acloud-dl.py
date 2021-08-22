@@ -242,7 +242,11 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
               sys.stdout.write (fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Found (%s) lectures ...\n" % (lectures_count))
               sys.stdout.write (fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Found (%s) quizzes ...\n" % (quizzes_count))
 
+              total_quizzes = len(quizzes)
+              quiz_index = 0
               for quiz in quizzes:
+                  quiz_index += 1 
+                  sys.stdout.write (fc + sd + "\n[" + fm + sb + "*" + fc + sd + "] : " + fm + sb + "Downloading quiz : ({index} of {total})\n".format(index=quiz_index, total=total_quizzes))
                   quiz.write_quiz(filepath)
 
               for lecture in lectures:

@@ -986,6 +986,8 @@ class CloudGuru(ProgressBar):
                         for answer in _answers:
                             if answer not in answers:
                                 answers.append(answer)
+                        if len(answers) == len(choices):
+                            break
 
                     question = {
                         # "question_id": question.get("questionId"),
