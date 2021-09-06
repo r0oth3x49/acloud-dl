@@ -70,7 +70,7 @@ class CloudGuru(ProgressBar):
     def _extract_cookie_string(self, raw_cookies):
         try:
             mobj = re.search(
-                r"(?is)(Authorization:\s*Bearer\s*(?P<access_token>(.+?)))(\"\s|\s)",
+                r"(?is)(Authorization:\s*Bearer\s*(?P<access_token>(.+?)))($|\s|\"|\')",
                 raw_cookies,
             )
             if not mobj:
