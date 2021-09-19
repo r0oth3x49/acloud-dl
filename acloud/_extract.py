@@ -371,6 +371,8 @@ class CloudGuru(ProgressBar):
                 height, width = 720, 1280
             elif res == "480p":
                 height, width = 480, 854
+            elif res == "360p":
+                height, width = 360, 480
             return height, width
 
         for entry in sources:
@@ -676,12 +678,13 @@ class CloudGuru(ProgressBar):
             if content_type == "video":
                 videoposter = entry["content"].get("videoposter", "")
                 content_id = entry["content"].get("contentId")
+                sources = entry["content"].get("videosources")
                 sub_id = self._extract_sub_id(videoposter)
                 if sub_id and sub_id not in sub_ids:
                     sub_ids.append(sub_id)
                 if not sub_id and content_id:
                     sub_ids.append(content_id)
-                if content_id:
+                if content_id and not sources:
                     contentid_list.append(content_id)
                     _temp.append(
                         {
@@ -699,9 +702,8 @@ class CloudGuru(ProgressBar):
                         }
                     )
                     continue
-                sources = entry["content"].get("videosources")
-                if not sources:
-                    continue
+                # if not sources:
+                #     continue
                 sources = self._extract_sources(sources)
                 if lecture not in _temp:
                     _temp.append(
