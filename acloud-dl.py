@@ -26,12 +26,25 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
         self.cookies = cookies
         super(CloudGuru, self).__init__()
 
-    def course_list_down(self, download_all=False):
+    def course_list_undown(self, courses, path="", isFiltering=False):
+        if not isFiltering or path == "":
+            return courses
+        
+        res = list()            
+        downCourses = os.listdir(path)
+        for course in courses:
+            cr_name = '{}'.format(course)
+            if not cr_name in downCourses:
+                res.append(course)
+        return res
+
+    def course_list_down(self, path='', download_all=False, download_only_new=False):
         sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading accessible courses information .. \r")
-        courses = acloud.courses(cookies=self.cookies)
+        courses = self.course_list_undown(acloud.courses(cookies=self.cookies), path, download_only_new)
+                                
         if not download_all:
             sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading accessible courses information .. (done)\r\n")
-            counter = 1
+            counter = 1                                    
             for course in courses:
                 title = course.title
                 sys.stdout.write(fc + sd + "[" + fm + sb + "%s" % (counter) + fc + sd + "] : " + fg + sb + "%s\n" % (title))
@@ -151,12 +164,12 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
                             sys.stdout.write (fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Asset : '%s' " % (title) + fc + sb + "(download skipped).\n")
                             sys.stdout.write (fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sd + "{}\n".format(msg))
 
-    def download_lectures(self, lecture_best='', lecture_title='', inner_index='', lectures_count='', filepath=''):
+    def download_lectures(self, lecture_best='', lecture_title='', inner_index='', lectures_count='', filepath='', user_extension=''):
         if lecture_best:
             sys.stdout.write(fc + sd + "\n[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Lecture(s) : ({index} of {total})\n".format(index=inner_index, total=lectures_count))
             sys.stdout.write(fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Downloading (%s)\n" % (lecture_title))
             try:
-                retval = lecture_best.download(filepath=filepath, quiet=True, callback=self.show_progress)
+                retval = lecture_best.download(filepath=filepath, quiet=True, user_extension=user_extension, callback=self.show_progress)
             except KeyboardInterrupt:
                 sys.stdout.write (fc + sd + "\n[" + fr + sb + "-" + fc + sd + "] : " + fr + sd + "User Interrupted..\n")
                 sys.exit(0)
@@ -169,17 +182,19 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
                 sys.stdout.write (fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sd + "Lecture : '%s' " % (lecture_title) + fc + sb + "(download skipped).\n")
                 sys.stdout.write (fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sd + "{}\n".format(msg))
 
-    def download_lectures_only(self, lecture_best='', lecture_title='', inner_index='', lectures_count='', lecture_assets='', lecture_subs='', filepath=''):
+    def download_lectures_only(self, lecture_best='', lecture_title='', inner_index='', lectures_count='', lecture_assets='', lecture_subs='', filepath='', user_extension=''):
         if lecture_best:
-            self.download_lectures(lecture_best=lecture_best, lecture_title=lecture_title, inner_index=inner_index, lectures_count=lectures_count, filepath=filepath)
+            self.download_lectures(lecture_best=lecture_best, lecture_title=lecture_title, inner_index=inner_index, lectures_count=lectures_count, filepath=filepath, user_extension=user_extension)
         if lecture_assets:
             self.download_assets(lecture_assets=lecture_assets, filepath=filepath)
         if lecture_subs:
             self.download_subtitles(subtitle=lecture_subs, filepath=filepath)
 
-    def course_download(self, path='', quality='', download_all=False):
+
+    def course_download(self, path='', quality='', user_extension='', download_all=False, download_only_new=False):
         sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading accessible courses information .. \r")
-        courses = acloud.courses(cookies=self.cookies)
+        courses = self.course_list_undown(acloud.courses(cookies=self.cookies), path, download_only_new)
+        
         if not download_all:
             sys.stdout.write('\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading accessible courses information .. (done)\r\n")
             counter = 1
@@ -238,7 +253,8 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
                   lecture_assets = lecture.assets
                   lecture_subs = lecture.subtitle
                   lecture_best = lecture.get_quality(best_quality=lecture_best, streams=lecture_streams, requested=quality)
-                  self.download_lectures_only(lecture_best=lecture_best, lecture_title=lecture_title, inner_index=lecture_index, lectures_count=lectures_count, lecture_assets=lecture_assets, lecture_subs=lecture_subs, filepath=filepath)
+                  self.download_lectures_only(lecture_best=lecture_best, lecture_title=lecture_title, inner_index=lecture_index, lectures_count=lectures_count, 
+                                              lecture_assets=lecture_assets, lecture_subs=lecture_subs, filepath=filepath, user_extension=user_extension)
 
 
 def main():
@@ -284,6 +300,16 @@ def main():
         dest='download_all',\
         action='store_true',\
         help="Download all courses without any prompt (default: false).")
+    advance.add_argument(
+        '-n', '--new',\
+        dest='download_only_new',\
+        action='store_true',\
+        help="Download only courses that have not already been downloaded (default: false).")
+    advance.add_argument(
+        '-e', '--extension',\
+        dest='extension',\
+        type=str,\
+        help="Rename course lecture video/audio files extension to defined by user.")
 
     options = parser.parse_args()
 
@@ -301,10 +327,11 @@ def main():
             acloud = CloudGuru(cookies=cookies)
 
             if options.info:
-                acloud.course_list_down()
+                acloud.course_list_down(path=options.output, download_only_new=options.download_only_new)
 
             if not options.info:
-                acloud.course_download(path=options.output, quality=options.quality, download_all=options.download_all)
+                acloud.course_download(path=options.output, quality=options.quality, user_extension=options.extension, 
+                                       download_all=options.download_all, download_only_new=options.download_only_new)
 
         else:
             sys.stdout.write('\n' + fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "file containing request headers is required.\n")
@@ -319,10 +346,11 @@ def main():
             acloud = CloudGuru(cookies=cookies)
 
             if options.info:
-                acloud.course_list_down()
+                acloud.course_list_down(path=options.output, download_only_new=options.download_only_new)
 
             if not options.info:
-                acloud.course_download(path=options.output, quality=options.quality, download_all=options.download_all)
+                acloud.course_download(path=options.output, quality=options.quality, user_extension=options.extension, 
+                                       download_all=options.download_all, download_only_new=options.download_only_new)
         else:
             sys.stdout.write('\n' + fc + sd + "[" + fr + sb + "-" + fc + sd + "] : " + fr + sb + "unable to find file '%s'.\n" % (options.cookies))
             sys.exit(0)

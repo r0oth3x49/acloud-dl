@@ -50,6 +50,8 @@ NO_DEFAULT = object()
 PUBLIC_GRAPHQL_URL = "https://prod-api.acloud.guru/bff/graphql"  # 'https://prod-api.acloud.guru/bff/graphql/public'
 PROTECTED_GRAPHQL_URL = "https://prod-api.acloud.guru/bff/graphql/protected"
 
+PUBLIC_SUBTITLES_URL = "https://acloudguru-subtitles-production.s3.amazonaws.com/{}.vtt"
+
 # queries ..
 GRAPH_QUERY_COURSES = {
     "query": "query getAccessibleCourses{getAccessibleCourses{...courseFields}}fragment courseFields on CondensedCourse{title,uniqueid}",

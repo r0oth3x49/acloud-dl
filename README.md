@@ -21,6 +21,8 @@
 - Download lecture(s) requested resolution (option: `-q / --quality`).
 - Download course to user requested path (option: `-o / --output`).
 - Authentication using cookies (option: `-c / --cookies`).
+- Download only courses that haven't been downloaded (option: `-n / --new`).
+- Rename course lecture video/audio files extensions to defined by user (option: `-e / --extension`).
 
 ## ***Extracting Cookies***
 
@@ -111,7 +113,7 @@ You can download the latest version of acloud-dl by cloning the GitHub repositor
 <pre><code>
 Author: Nasir khan (<a href="http://r0oth3x49.herokuapp.com/">r0ot h3x49</a>)
 
-usage: acloud-dl.py [-h] [-v] [-c] [-o] [-q] [-i] [-a]
+usage: acloud-dl.py [-h] [-v] [-c] [-o] [-q] [-i] [-a] [-n] [-e]
 
 A cross-platform python based utility to download courses from acloud.guru for
 personal offline use.
@@ -128,6 +130,8 @@ Advance:
   -q , --quality   Download specific video quality.
   -i, --info       List all lectures with available resolution.
   -a, --all        Download all courses without any prompt (default: false).
+  -n, --new        Download only courses that have not already been downloaded (default: false).
+  -e, --extension  Rename course lecture video/audio files extension to defined by user. 
 
 Example:
   python acloud-dl.py -c cookies.txt
