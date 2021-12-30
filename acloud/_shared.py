@@ -281,6 +281,7 @@ class CloudGuruLectureStreams(object):
         self._resolution = None
         self._dimention = None
         self._extension = None
+        self._user_extension = None
         self._url = None
         self._path = None
 
@@ -288,7 +289,7 @@ class CloudGuruLectureStreams(object):
         self._filename = None
         self._fsize = None
         self._active = False
-
+        
     def __repr__(self):
         out = "%s:%s@%s" % (self.mediatype, self.extension, self.quality)
         return out
@@ -325,6 +326,8 @@ class CloudGuruLectureStreams(object):
 
     @property
     def extension(self):
+        if self._user_extension:
+            return self._user_extension 
         return self._extension
 
     @property
@@ -344,8 +347,9 @@ class CloudGuruLectureStreams(object):
     def get_filesize(self):
         return self._fsize
 
-    def download(self, filepath="", quiet=False, callback=lambda *x: None):
+    def download(self, filepath="", quiet=False, user_extension=None, callback=lambda *x: None):
         savedir = filename = ""
+        self._user_extension = user_extension
         retVal = {}
 
         if filepath and os.path.isdir(filepath):
@@ -365,7 +369,7 @@ class CloudGuruLectureStreams(object):
             retVal = {"status": "True", "msg": "already downloaded"}
             return retVal
 
-        temp_filepath = filepath + ".part"
+        temp_filepath = filepath + ".part"        
 
         status_string = (
             "  {:,} Bytes [{:.2%}] received. Rate: [{:4.0f} "

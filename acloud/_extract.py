@@ -38,13 +38,14 @@ from ._compat import (
     encoding,
     conn_error,
     PUBLIC_GRAPHQL_URL,
-    PROTECTED_GRAPHQL_URL,
+    PROTECTED_GRAPHQL_URL,    
     GRAPH_QUERY_COURSES,
     GRAPH_QUERY_COURSE_INFO,
     GRAPH_QUERY_DOWNLOAD_LINKS,
     GRAPH_QUERY_SUBTITLE_LINKS,
     GRAPH_QUERY_UseHasCourseAccess,
     GRAPH_QUERY_UNPROTECTED_DOWNLOAD_LINKS,
+    PUBLIC_SUBTITLES_URL,
 )
 from ._sanitize import slugify, sanitize, SLUG_OK
 from ._colorized import *
@@ -641,12 +642,18 @@ class CloudGuru(ProgressBar):
             sys.exit(0)
         else:
             data = response.json()
-            subtitles = data.get("data", {}).get("subtitleTranscription", [])
+            subtitles = data.get("data", {}).get("subtitleTranscription", [])            
             if subtitles:
                 for entry in subtitles:
                     _id = entry.get("id")
                     url = entry.get("subtitleUrl")
                     _temp.append({"subtitle_id": _id, "url": url})
+            else:
+                # HACK: get subtitles from public storage of ACloud Guru infrastructure
+                for sid in sub_ids:
+                    _id = sid
+                    _url = PUBLIC_SUBTITLES_URL.format(sid)
+                    _temp.append({"subtitle_id": _id, "url": _url})
         return _temp
 
     def _extract_sub_id(self, videoposter):
@@ -683,6 +690,7 @@ class CloudGuru(ProgressBar):
                 if sub_id and sub_id not in sub_ids:
                     sub_ids.append(sub_id)
                 if not sub_id and content_id:
+                    sub_id = content_id
                     sub_ids.append(content_id)
                 if content_id and not sources:
                     contentid_list.append(content_id)
@@ -762,7 +770,7 @@ class CloudGuru(ProgressBar):
         courses_ids = {"courseIds": [course_id]}
         GRAPH_QUERY_COURSE_INFO.update({"variables": courses_ids})
         query = GRAPH_QUERY_COURSE_INFO
-
+        
         try:
             response = self._session._post(PUBLIC_GRAPHQL_URL, query)
         except conn_error as e:
@@ -783,7 +791,7 @@ class CloudGuru(ProgressBar):
             time.sleep(0.8)
             sys.exit(0)
         else:
-            course = response.json().get("data")
+            course = response.json().get("data")            
             # json.dump(course, open("course.json", "w"), indent=4)
             if course:
                 course = course["courseOverviews"][0]
