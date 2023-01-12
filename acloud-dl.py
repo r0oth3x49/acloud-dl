@@ -216,6 +216,51 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
         if lecture_subs:
             self.download_subtitles(subtitle=lecture_subs, filepath=filepath)
 
+    def parse_download_range(self, input_string):
+
+        if input_string == "":
+            return []
+
+        # Initialize an empty list to hold the courses
+        courses = []
+
+        # Split the input string into a list of page ranges
+        ranges = input_string.split(',')
+
+        # Iterate over the page ranges
+        for r in ranges:
+            # Check if the range is a single page or a range of pages
+            if '-' in r:
+                # Split the range into a start and end page
+                start, end = r.split('-')
+
+                # Convert the start and end pages to integers
+                start = int(start)
+                end = int(end)
+
+                # Add all pages in the range to the list
+                courses += list(range(start, end + 1))
+            else:
+                # If the range is a single page, add it to the list
+                courses.append(int(r))
+
+        # Return the list of pages
+        return courses
+
+    def select_courses(self, courses, input_list):
+        # Initialize an empty list to hold the selected courses
+        selected_courses = []
+
+        # Iterate over the parsed input list
+        for i in input_list:
+            # Check if the index is within the range of the pages list
+            if len(courses) >= i >= 0:
+                # Add the page at the index to the selected courses list
+                selected_courses.append(courses[i-1])
+
+        # Return the selected pages list
+        return selected_courses
+
     def course_download(self, path='', quality='', user_extension='', download_all=False, download_only_new=False):
         sys.stdout.write(
             '\033[2K\033[1G\r\r' + fc + sd + "[" + fm + sb + "*" + fc + sd + "] : " + fg + sb + "Downloading accessible courses information .. \r")
@@ -229,22 +274,15 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
                 title = course.title
                 sys.stdout.write(fc + sd + "[" + fm + sb + "%s" % counter + fc + sd + "] : " + fg + sb + "%s\n" % title)
                 counter += 1
-            question = fc + sd + "[" + fw + sb + "?" + fc + sd + "] : " + fy + sb + "select course number or range (1/%s/range): " % (
+            question = fc + sd + "[" + fw + sb + "?" + fc + sd + "] : " + fy + sb + "select course number or range (1/%s/range 1-3,5): " % (
                 len(courses)) + fg + sb
             ask_user = self._getuser(prompt=question)
-            # setting default to download all if no user input is provided
-            if ask_user and ask_user[-1] == '+':
-                course_number = int(ask_user.split('+')[0])
-                if 0 < course_number <= len(courses):
-                    course_number = course_number - 1
-                    courses = courses[course_number:len(courses)]
-            elif ask_user and ask_user[-1] != "+":
-                course_number = int(ask_user)
-                if 0 < course_number <= len(courses):
-                    course_number = course_number - 1
-                    courses = [courses[course_number]]
-            else:
+            selected_courses = self.parse_download_range(ask_user)
+            if len(selected_courses) == 0:
                 download_all = True
+            else:
+                courses = self.select_courses(courses, selected_courses)
+
         for course in courses:
             course_name = course.title
             sys.stdout.write(
