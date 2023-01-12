@@ -37,8 +37,8 @@ def unescapeHTML(s):
 
 class WebVtt2Srt(object):
 
-    _TIMECODE_REGEX = r"(?i)(?P<appeartime>(?:(?:\d{1,2}:)){1,2}\d{2}[\.,]\d+)"
-    _TIMECODE = r"(?i)(?P<appeartime>(?:(?:\d{1,2}:)){1,2}\d{2}[\.,]\d+)\s*-->\s*(?i)(?P<disappertime>(?:(?:\d{1,2}:)){1,2}\d{2}[\.,]\d+)"
+    _TIMECODE_REGEX = r"(?P<appeartime>(?:(?:\d{1,2}:)){1,2}\d{2}[\.,]\d+)"
+    _TIMECODE = r"(?P<appeartime>(?:(?:\d{1,2}:)){1,2}\d{2}[\.,]\d+)\s*-->\s*(?P<disappertime>(?:(?:\d{1,2}:)){1,2}\d{2}[\.,]\d+)"
 
     def _vttcontents(self, fname):
         try:
@@ -56,13 +56,13 @@ class WebVtt2Srt(object):
 
     def _locate_timecode(self, content):
         for (loc, line) in enumerate(content):
-            match = re.match(self._TIMECODE_REGEX, line, flags=re.U)
+            match = re.match(self._TIMECODE_REGEX, line, flags=re.I | re.U)
             if match:
                 return {"status": True, "location": loc}
         return {"status": False, "location": loc}
 
     def _is_timecode(self, timecode):
-        match = re.match(self._TIMECODE_REGEX, timecode, flags=re.U)
+        match = re.match(self._TIMECODE_REGEX, timecode, flags=re.I | re.U)
         if match:
             return True
         return False
@@ -76,7 +76,7 @@ class WebVtt2Srt(object):
         return timecode
 
     def _generate_timecode(self, sequence, timecode):
-        match = re.match(self._TIMECODE, timecode, flags=re.U)
+        match = re.match(self._TIMECODE, timecode, flags=re.I | re.U)
         if match:
             start, end = self._fix_timecode(
                 timecode=re.sub(r"[\.,]", ",", match.group("appeartime"))
@@ -107,7 +107,7 @@ class WebVtt2Srt(object):
                         self._write_srtcontent(fname, timecode)
                         seq += 1
                     if not flag:
-                        match = re.match("^([0-9]{1,3})$", line, flags=re.U)
+                        match = re.match("^([0-9]{1,3})$", line, flags=re.I | re.U)
                         if not match:
                             data = u"{content}\r\n".format(content=line)
                             self._write_srtcontent(fname, data)
