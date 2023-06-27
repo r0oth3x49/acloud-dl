@@ -153,8 +153,7 @@ docker run -v ${PWD}:/opt/app \
   -u $(id -u ${USER}):$(id -g ${USER}) \
   -it --rm \
   acloud-dl -c cookie.txt
-
 ```
-any extra options or arguments can be appended as normal. 
+extra options or arguments can be appended as normal. 
 
 Please note, if you're using the `--output` option to specify a specific output directory then ensure that the container has access to these volumes (use additional docker bind-mounts as needed)
