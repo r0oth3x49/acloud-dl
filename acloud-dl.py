@@ -238,6 +238,10 @@ class CloudGuru(WebVtt2Srt, ProgressBar, GetPass):
                 if 0 < course_number <= len(courses):
                     course_number = course_number - 1
                     courses = courses[course_number:len(courses)]
+            # no input validation, provide correct index values only!!
+            elif ask_user and ',' in ask_user:
+                course_numbers = ask_user.split(',')
+                courses = [courses[int(num) - 1] for num in course_numbers]
             elif ask_user and ask_user[-1] != "+":
                 course_number = int(ask_user)
                 if 0 < course_number <= len(courses):
