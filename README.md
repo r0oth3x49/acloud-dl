@@ -37,7 +37,7 @@
 
 ## ***Requirements***
 
-- Python 3.
+- Python 3 (3.9 tested, 3.11 broken)
 - Python `pip`
 - Python module `requests`
 - Python module `colorama`
@@ -55,7 +55,7 @@
 - Kali linux (2017.2)
 - Ubuntu-LTS (64-bit) (tested with super user)
 - Mac OSX 10.9.5 (tested with super user)
- 
+
 ## ***Download acloud-dl***
 
 You can download the latest version of acloud-dl by cloning the GitHub repository.
@@ -136,3 +136,24 @@ Advance:
 Example:
   python acloud-dl.py -c cookies.txt
 </code></pre>
+
+## Docker
+
+The app can be executed within a container to avoid dependency issues. Clone the repository then execute following commands from the root location of the project.
+
+***Build Image***
+
+`docker build -t acloud-dl .`
+
+***Run Container***
+
+Assuming cookie file called `cookie.txt` and stored in root of project:
+```
+docker run -v ${PWD}:/opt/app \
+  -u $(id -u ${USER}):$(id -g ${USER}) \
+  -it --rm \
+  acloud-dl -c cookie.txt
+```
+extra options or arguments can be appended as normal. 
+
+Please note, if you're using the `--output` option to specify a specific output directory then ensure that the container has access to these volumes (use additional docker bind-mounts as needed)
