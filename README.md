@@ -35,6 +35,20 @@
  - Right click on any of the Requests which links to **acloud.guru**. Simply copy **Request Headers** and save to text file.
  - Done run the acloud-dl against that text file it will start downloading the course.
 
+## ***Extracting Cookies Application***
+
+ - Login to your acloud.guru account now via https://www.pluralsight.com > Sign In (Top Right Corner) > A Cloud Guru (Middle Option)
+ - Open the course you want to download (Eg: AWS Solution Architect Professional -> https://learn.acloud.guru/course/aws-certified-solutions-architect-professional)
+ - Enroll yourself by pressing "Start Course", if you haven't already started the course.
+ - Once you started the course, right click on page then search for option called **Inspect Element** and click on that.
+ - Under that look for **Application Tab** and click on that.
+ - Under that **Application Tab** expand on **Cookies**.
+ - Your will see a table with column Name, Value, Domain, ...
+ - On the top there is filter - search for **auth0_token**.
+ - Copy value of **auth0_token** for the domain **learn.acloud.guru**
+ - Create a **cook.txt** file and its content should be ```auth0_token=<value copied above>```
+ - Now run ```python acloud-dl.py -c cook.txt```
+
 ## ***Requirements***
 
 - Python 3 (3.9 tested, 3.11 broken)
@@ -136,6 +150,12 @@ Advance:
 Example:
   python acloud-dl.py -c cookies.txt
 </code></pre>
+
+## Rename VIDEO_AUDIO file
+
+If you downloaded the course without custom extension via ```-e``` option. Change the ```VIDEO_AUDIO``` file to ```mp4``` using renamesuffix.py
+
+    python renamesuffix.py
 
 ## Docker
 
