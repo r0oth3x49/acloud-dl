@@ -151,6 +151,12 @@ Example:
   python acloud-dl.py -c cookies.txt
 </code></pre>
 
+## Rename VIDEO_AUDIO file
+
+If you downloaded the course without custom extension via ```-e``` option. Change the ```VIDEO_AUDIO``` file to ```mp4``` using renamesuffix.py
+
+    python renamesuffix.py
+
 ## Docker
 
 The app can be executed within a container to avoid dependency issues. Clone the repository then execute following commands from the root location of the project.
