@@ -767,7 +767,7 @@ class CloudGuruLectureLectureAssets(object):
         filename = filepath
         if os.name == "nt":
             # If the absolute path to the file is too long, append the 'magic' prefix
-            if len(os.path.abspath(filename)) > 255:
+            if len(os.path.abspath(filename)) > 255 and not filename.startswith(u"\\\\?\\"):
                 filename = u"\\\\?\\%s" % (os.path.abspath(filename))
         if pyver == 3:
             with open("{}".format(filename), "a", encoding="utf-8") as f:
